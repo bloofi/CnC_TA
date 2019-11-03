@@ -1,5 +1,5 @@
 // ==UserScript==
-// @version	    2019.11.03
+// @version	    2019.10.13
 // @name        CnCLV Link Button
 // @icon        https://spy-cnc.fr/CNC/bi/favicon-cnclv.ico
 // @description The same as the classic Cncopt script, but this one adds an additionnal button to CnCLV
@@ -537,7 +537,8 @@ try {
                                 case 4: /* Forgotten Bases */
                                 case 5: /* Forgotten Camps */
                                 case 6: /* Forgotten Outposts */
-                                    query += ' at ' + selected_base.get_RawX() + ':' + selected_base.get_RawY();
+                                    // console.log(city, selected_base);
+                                    query += ' ' + city.m_Level + ' - ' + selected_base.get_RawX() + ':' + selected_base.get_RawY();
                                     break;
                             }
                             query += '|';
