@@ -1,5 +1,5 @@
 // ==UserScript==
-// @version	    2019.10.13
+// @version	    2019.11.03
 // @name        CnCLV Link Button
 // @icon        https://spy-cnc.fr/CNC/bi/favicon-cnclv.ico
 // @description The same as the classic Cncopt script, but this one adds an additionnal button to CnCLV
@@ -34,7 +34,7 @@ var scity = null;
 var tcity = null;
 var tbase = null;
 try {
-    unsafeWindow.__cncopt_version = '2019.10.13.1';
+    unsafeWindow.__cncopt_version = '2019.11.03';
     (function() {
         var cncopt_main = function() {
             var defense_unit_map = {
@@ -274,7 +274,7 @@ try {
             }
 
             function cncopt_create() {
-                console.log('CNCOpt Link Button v' + window.__cncopt_version + ' loaded');
+                console.log('CNCLV Link Button v' + window.__cncopt_version + ' loaded');
                 var cncopt = {
                     selected_base: null,
                     keymap: {
@@ -500,7 +500,7 @@ try {
                                     query += 'F|';
                                     break;
                                 default:
-                                    console.log('cncopt: Unknown faction: ' + city.get_CityFaction());
+                                    console.log('cnclv: Unknown faction: ' + city.get_CityFaction());
                                     query += 'E|';
                                     break;
                             }
@@ -528,11 +528,19 @@ try {
                                     }
                                     break;
                                 default:
-                                    console.log('cncopt: Unknown faction: ' + own_city.get_CityFaction());
+                                    console.log('cnclv: Unknown faction: ' + own_city.get_CityFaction());
                                     query += 'E|';
                                     break;
                             }
-                            query += city.get_Name() + '|';
+                            query += city.get_Name() ;
+                            switch (city.get_CityFaction()) {
+                                case 4: /* Forgotten Bases */
+                                case 5: /* Forgotten Camps */
+                                case 6: /* Forgotten Outposts */
+                                    query += ' at ' + selected_base.get_RawX() + ':' + selected_base.get_RawY();
+                                    break;
+                            }
+                            query += '|';
                             defense_units = [];
                             for (var i = 0; i < 20; ++i) {
                                 var col = [];
@@ -611,21 +619,21 @@ try {
                                                 if (GAMEDATA.Tech[techId].n in cncopt.keymap) {
                                                     query += cncopt.keymap[GAMEDATA.Tech[techId].n];
                                                 } else {
-                                                    console.log('cncopt [5]: Unhandled building: ' + techId, building);
+                                                    console.log('cnclv [5]: Unhandled building: ' + techId, building);
                                                     query += '.';
                                                 }
                                             } else if (defense_unit) {
                                                 if (defense_unit.get_UnitGameData_Obj().n in cncopt.keymap) {
                                                     query += cncopt.keymap[defense_unit.get_UnitGameData_Obj().n];
                                                 } else {
-                                                    console.log('cncopt [5]: Unhandled unit: ' + defense_unit.get_UnitGameData_Obj().n);
+                                                    console.log('cnclv [5]: Unhandled unit: ' + defense_unit.get_UnitGameData_Obj().n);
                                                     query += '.';
                                                 }
                                             } else if (offense_unit) {
                                                 if (offense_unit.get_UnitGameData_Obj().n in cncopt.keymap) {
                                                     query += cncopt.keymap[offense_unit.get_UnitGameData_Obj().n];
                                                 } else {
-                                                    console.log('cncopt [5]: Unhandled unit: ' + offense_unit.get_UnitGameData_Obj().n);
+                                                    console.log('cnclv [5]: Unhandled unit: ' + offense_unit.get_UnitGameData_Obj().n);
                                                     query += '.';
                                                 }
                                             } else {
@@ -659,7 +667,7 @@ try {
                                             query += 'k';
                                             break;
                                         default:
-                                            console.log('cncopt [4]: Unhandled resource type: ' + city.GetResourceType(j, i));
+                                            console.log('cnclv [4]: Unhandled resource type: ' + city.GetResourceType(j, i));
                                             query += '.';
                                             break;
                                     }
@@ -684,7 +692,7 @@ try {
                             //console.log(query);
                             window.open(baseUrl + query, '_blank');
                         } catch (e) {
-                            console.log('cncopt [1]: ', e);
+                            console.log('cnclv [1]: ', e);
                         }
                     },
                 };
@@ -727,7 +735,7 @@ try {
                                         this.__cncopt_links.push(linkBi);
                                     }
                                 } catch (e) {
-                                    console.log('cncopt [2]: ', e);
+                                    console.log('cnclv [2]: ', e);
                                 }
                             }
                         }
@@ -746,7 +754,7 @@ try {
                                 break;
                             case ClientLib.Vis.VisObject.EObjectType.RegionGhostCity:
                                 tf = false;
-                                console.log("cncopt: Ghost City selected.. ignoring because we don't know what to do here");
+                                console.log("cnclv: Ghost City selected.. ignoring because we don't know what to do here");
                                 break;
                             case ClientLib.Vis.VisObject.EObjectType.RegionNPCBase:
                                 tf = true;
@@ -803,7 +811,7 @@ try {
                                     }
                                 }
                             } catch (e) {
-                                console.log('cncopt [3]: ', e);
+                                console.log('cnclv [3]: ', e);
                                 tf = false;
                             }
                         }
@@ -811,7 +819,7 @@ try {
                         check_ct = 50;
                         check_if_button_should_be_enabled();
                     } catch (e) {
-                        console.log('cncopt [3]: ', e);
+                        console.log('cnclv [3]: ', e);
                     }
                     this.__cncopt_real_showMenu(selected_base);
                 };
