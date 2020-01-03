@@ -2,8 +2,8 @@
 // ==UserScript==
 // @version	    2020.01.03
 // @name        CnCTA Layout Preview
-// @downloadURL https://raw.githubusercontent.com/bloofi/CnC_TA/master/CnCTA-Layout-Preview.user.js
-// @updateURL   https://raw.githubusercontent.com/bloofi/CnC_TA/master/CnCTA-Layout-Preview.user.js
+// @downloadURL https://github.com/bloofi/CnC_TA/raw/master/CnCTA-Layout-Preview.user.js
+// @updateURL   https://github.com/bloofi/CnC_TA/raw/master/CnCTA-Layout-Preview.user.js
 // @include     http*://prodgame*.alliances.commandandconquer.com/*/index.aspx*
 // @include     http*://cncapp*.alliances.commandandconquer.com/*/index.aspx*
 // @autohor     bloofi (https://github.com/bloofi)
