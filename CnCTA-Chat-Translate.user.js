@@ -1,6 +1,6 @@
 "use strict";
 // ==UserScript==
-// @version	    2020.01.03
+// @version	    2020.01.04
 // @name        CnCTA Chat Translate
 // @downloadURL https://github.com/bloofi/CnC_TA/raw/master/CnCTA-Chat-Translate.user.js
 // @updateURL   https://github.com/bloofi/CnC_TA/raw/master/CnCTA-Chat-Translate.user.js
@@ -10,7 +10,7 @@
 // ==/UserScript==
 (function () {
     const script = () => {
-        const scriptName = 'CnCTA Chat Translate';
+        const scriptName = 'CnCTA Chat Translate - 2020.01.04';
         const config = {
             target: 'en',
             excludes: [],
@@ -38,38 +38,60 @@
                 .getDomElement();
             chatInput.addEventListener('keydown', a => {
                 if (a.key === 'Enter') {
-                    const regCmd = /^\/(tl|il|el) ([a-z]{2})$/;
+                    const regCmd = /^\/(tl|il|el|translate) ?([a-z]{0,2})$/;
                     if (regCmd.test(chatInput.value)) {
                         const r = regCmd.exec(chatInput.value);
                         switch (r[1]) {
+                            case 'translate':
+                                const msg = [
+                                    scriptName,
+                                    'Currently translating to : ' + config.target,
+                                    'Languages not translated : ' + config.excludes.join(', '),
+                                ];
+                                showMessage(channels.all, 'Translate', msg.join('<br>'));
+                                break;
                             case 'tl':
-                                config.target = r[2] || 'en';
-                                localStorage.setItem('CnCTA-Chat-Translate', JSON.stringify(config));
-                                showMessage(channels.all, 'Translate', 'Target language changed to : ' + config.target);
+                                if (r.length > 2) {
+                                    config.target = r[2] || 'en';
+                                    localStorage.setItem('CnCTA-Chat-Translate', JSON.stringify(config));
+                                    showMessage(channels.all, 'Translate', 'Target language changed to : ' + config.target);
+                                }
+                                else {
+                                    showMessage(channels.all, 'Translate', 'You must provide a target language, for example : <u>/tl en</u>', 'cyan', 'red');
+                                }
                                 break;
                             case 'el':
-                                config.excludes.push(r[2]);
-                                config.excludes = config.excludes.reduce((p, c) => (p.includes(c) ? p : p.concat(c)), []);
-                                localStorage.setItem('CnCTA-Chat-Translate', JSON.stringify(config));
-                                showMessage(channels.all, 'Translate', 'Languages not translated : ' + config.excludes.join(', '));
+                                if (r.length > 2) {
+                                    config.excludes.push(r[2]);
+                                    config.excludes = config.excludes.reduce((p, c) => (p.includes(c) ? p : p.concat(c)), []);
+                                    localStorage.setItem('CnCTA-Chat-Translate', JSON.stringify(config));
+                                    showMessage(channels.all, 'Translate', 'Languages not translated : ' + config.excludes.join(', '));
+                                }
+                                else {
+                                    showMessage(channels.all, 'Translate', 'You must provide a language to exclude, for example : <u>/el en</u>', 'cyan', 'red');
+                                }
                                 break;
                             case 'il':
-                                config.excludes = config.excludes.filter(l => l !== r[2]);
-                                localStorage.setItem('CnCTA-Chat-Translate', JSON.stringify(config));
-                                showMessage(channels.all, 'Translate', 'Languages not translated : ' + config.excludes.join(', '));
+                                if (r.length > 2) {
+                                    config.excludes = config.excludes.filter(l => l !== r[2]);
+                                    localStorage.setItem('CnCTA-Chat-Translate', JSON.stringify(config));
+                                    showMessage(channels.all, 'Translate', 'Languages not translated : ' + config.excludes.join(', '));
+                                }
+                                else {
+                                    showMessage(channels.all, 'Translate', 'You must provide a language to include, for example : <u>/il en</u>', 'cyan', 'red');
+                                }
                                 break;
                             default:
                                 break;
                         }
-                        chatInput.value = "";
+                        chatInput.value = '';
                         chatInput.focus();
                         return false;
                     }
                 }
             });
             phe.cnc.Util.attachNetEvent(ClientLib.Data.MainData.GetInstance().get_Chat(), 'NewMessage', ClientLib.Data.ChatMessage, this, (m) => {
-                // console.log(scriptName, 'Message', m);
-                if (m.c === '@A' && !m.c.startsWith('http')) {
+                if (['@A', '@O'].includes(m.c) && !m.c.startsWith('http')) {
                     const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${config.target}&dt=t&q=${encodeURI(m.m)}`;
                     fetch(url, { method: 'POST' })
                         .then(function (response) {
@@ -78,7 +100,7 @@
                         .then(function (res) {
                         console.log(scriptName, 'REPONSE', res);
                         if (res && res.length > 3 && config.target !== res[2] && !config.excludes.includes(res[2])) {
-                            showMessage(channels[m.c], m.s, res[0][0][0]);
+                            showMessage(channels[m.c], `${m.s} (${res[2]} -> ${config.target})`, res[0][0][0]);
                         }
                     })
                         .catch(err => {
