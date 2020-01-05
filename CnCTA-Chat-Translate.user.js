@@ -7,14 +7,12 @@
 // @include     http*://prodgame*.alliances.commandandconquer.com/*/index.aspx*
 // @include     http*://cncapp*.alliances.commandandconquer.com/*/index.aspx*
 // @author      bloofi (https://github.com/bloofi)
-// @grant       GM_xmlhttpRequest
-// @grant       GM_updatingEnabled
 // ==/UserScript==
 (function () {
     const script = () => {
-        const scriptName = 'CnCTA Chat Translate - 2020.01.04';
-        const corsAnywhere = 'https://cors-anywhere.herokuapp.com';
-        const gtUrl = 'https://translate.googleapis.com/translate_a/single';
+        const scriptName = 'CnCTA Chat Translate - 2020.01.05';
+        const translateUrl = 'https://translate.yandex.net/api/v1.5/tr.json/translate';
+        const apiKey = 'trnsl.1.1.20200105T163924Z.af0750979fe26e6b.b3ad0a3ea716774311fc612441d8d8238e565082';
         const config = {
             target: 'en',
             excludes: [],
@@ -54,6 +52,7 @@
                                     'Translating is : ' + (config.active ? '<font color="#adff2f">ACTIVE</font>' : '<font color="red">OFF</font>'),
                                     'Translating to language  : ' + config.target,
                                     'Languages not translated : ' + config.excludes.join(', '),
+                                    'Powered by <a target="_blank" href="http://translate.yandex.com"><font color="white">Yandex.Translate</font></a>'
                                 ];
                                 showMessage(channels.all, 'Translate', msg.join('<br>'));
                                 break;
@@ -104,14 +103,47 @@
             });
             phe.cnc.Util.attachNetEvent(ClientLib.Data.MainData.GetInstance().get_Chat(), 'NewMessage', ClientLib.Data.ChatMessage, this, (m) => {
                 if (config.active && ['@A', '@O'].includes(m.c) && !m.c.startsWith('http')) {
-                    const url = `${corsAnywhere}/${gtUrl}?client=gtx&sl=auto&tl=${config.target}&dt=t&q=${encodeURI(m.m)}`;
-                    fetch(url, { method: 'POST' })
+                    const queryParams = {
+                        key: apiKey,
+                        lang: config.target,
+                        text: encodeURI(m.m),
+                    };
+                    const url = `${translateUrl}?${Object.keys(queryParams)
+                        .map(k => `${k}=${queryParams[k]}`)
+                        .join('&')}`;
+                    fetch(url, { method: 'GET' })
                         .then(function (response) {
                         return response.json();
                     })
                         .then(function (res) {
-                        if (res && res.length > 3 && config.target !== res[2] && !config.excludes.includes(res[2])) {
-                            showMessage(channels[m.c], `${m.s} (${res[2]} -> ${config.target})`, res[0][0][0]);
+                        switch (res.code) {
+                            case 200:
+                                const langs = res.lang.split('-');
+                                if (langs[0] !== langs[1] && !config.excludes.includes(langs[0])) {
+                                    showMessage(channels[m.c], `${m.s} (${langs[0]} -> ${langs[1]})`, res.text.join(''));
+                                }
+                                break;
+                            case 401:
+                                showMessage(channels[m.c], 'Translate', 'Error from Yandex : Invalid API Key', 'cyan', 'red');
+                                break;
+                            case 402:
+                                showMessage(channels[m.c], 'Translate', 'Error from Yandex : Blocked API Key', 'cyan', 'red');
+                                break;
+                            case 404:
+                                showMessage(channels[m.c], 'Translate', 'Error from Yandex : Exceeded the daily limit on the amount of translated text', 'cyan', 'red');
+                                break;
+                            case 413:
+                                showMessage(channels[m.c], 'Translate', 'Error from Yandex : Exceeded the maximum text size', 'cyan', 'red');
+                                break;
+                            case 422:
+                                showMessage(channels[m.c], 'Translate', 'The text cannot be translated', 'cyan', 'red');
+                                break;
+                            case 501:
+                                showMessage(channels[m.c], 'Translate', 'The specified translation direction is not supported', 'cyan', 'red');
+                                break;
+                            default:
+                                showMessage(channels[m.c], 'Translate', 'Unkown return code : ' + res.code, 'cyan', 'red');
+                                break;
                         }
                     })
                         .catch(err => {
