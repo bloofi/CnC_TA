@@ -1,19 +1,24 @@
 "use strict";
 // ==UserScript==
-// @version	    2020.01.04
+// @version	    2020.01.05
 // @name        CnCTA Chat Translate
 // @downloadURL https://github.com/bloofi/CnC_TA/raw/master/CnCTA-Chat-Translate.user.js
 // @updateURL   https://github.com/bloofi/CnC_TA/raw/master/CnCTA-Chat-Translate.user.js
 // @include     http*://prodgame*.alliances.commandandconquer.com/*/index.aspx*
 // @include     http*://cncapp*.alliances.commandandconquer.com/*/index.aspx*
-// @autohor     bloofi (https://github.com/bloofi)
+// @author      bloofi (https://github.com/bloofi)
+// @grant       GM_xmlhttpRequest
+// @grant       GM_updatingEnabled
 // ==/UserScript==
 (function () {
     const script = () => {
         const scriptName = 'CnCTA Chat Translate - 2020.01.04';
+        const corsAnywhere = 'https://cors-anywhere.herokuapp.com';
+        const gtUrl = 'https://translate.googleapis.com/translate_a/single';
         const config = {
             target: 'en',
             excludes: [],
+            active: true,
         };
         const init = () => {
             const channels = {
@@ -28,6 +33,7 @@
                 const sto = JSON.parse(localStorage.getItem('CnCTA-Chat-Translate') || '{}');
                 config.target = sto.target || 'en';
                 config.excludes = sto.excludes || [];
+                config.active = typeof sto.active !== 'undefined' ? sto.active : true;
             }
             catch (e) { }
             const chatInput = qx.core.Init.getApplication()
@@ -38,17 +44,23 @@
                 .getDomElement();
             chatInput.addEventListener('keydown', a => {
                 if (a.key === 'Enter') {
-                    const regCmd = /^\/(tl|il|el|translate) ?([a-z]{0,2})$/;
+                    const regCmd = /^\/(tl|il|el|tt|translate) ?([a-z]{0,2})$/;
                     if (regCmd.test(chatInput.value)) {
                         const r = regCmd.exec(chatInput.value);
                         switch (r[1]) {
                             case 'translate':
                                 const msg = [
                                     scriptName,
-                                    'Currently translating to : ' + config.target,
+                                    'Translating is : ' + (config.active ? '<font color="#adff2f">ACTIVE</font>' : '<font color="red">OFF</font>'),
+                                    'Translating to language  : ' + config.target,
                                     'Languages not translated : ' + config.excludes.join(', '),
                                 ];
                                 showMessage(channels.all, 'Translate', msg.join('<br>'));
+                                break;
+                            case 'tt':
+                                config.active = !config.active;
+                                localStorage.setItem('CnCTA-Chat-Translate', JSON.stringify(config));
+                                showMessage(channels.all, 'Translate', 'Translating is : ' + (config.active ? '<font color="#adff2f">ACTIVE</font>' : '<font color="red">OFF</font>'));
                                 break;
                             case 'tl':
                                 if (r.length > 2) {
@@ -91,20 +103,19 @@
                 }
             });
             phe.cnc.Util.attachNetEvent(ClientLib.Data.MainData.GetInstance().get_Chat(), 'NewMessage', ClientLib.Data.ChatMessage, this, (m) => {
-                if (['@A', '@O'].includes(m.c) && !m.c.startsWith('http')) {
-                    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${config.target}&dt=t&q=${encodeURI(m.m)}`;
+                if (config.active && ['@A', '@O'].includes(m.c) && !m.c.startsWith('http')) {
+                    const url = `${corsAnywhere}/${gtUrl}?client=gtx&sl=auto&tl=${config.target}&dt=t&q=${encodeURI(m.m)}`;
                     fetch(url, { method: 'POST' })
                         .then(function (response) {
                         return response.json();
                     })
                         .then(function (res) {
-                        console.log(scriptName, 'REPONSE', res);
                         if (res && res.length > 3 && config.target !== res[2] && !config.excludes.includes(res[2])) {
                             showMessage(channels[m.c], `${m.s} (${res[2]} -> ${config.target})`, res[0][0][0]);
                         }
                     })
                         .catch(err => {
-                        console.log('ERROR', err);
+                        console.log(scriptName, err);
                         showMessage(channels[m.c], 'Translate', 'Unable to translate message from ' + m.s, 'cyan', 'red');
                     });
                 }
