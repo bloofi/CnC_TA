@@ -1,6 +1,6 @@
 "use strict";
 // ==UserScript==
-// @version	    2020.03.19
+// @version	    2020.03.23
 // @name        CnCTA Main Finder
 // @downloadURL https://github.com/bloofi/CnC_TA/raw/master/CnCTA-Main-Finder.user.js
 // @updateURL   https://github.com/bloofi/CnC_TA/raw/master/CnCTA-Main-Finder.user.js
@@ -11,18 +11,6 @@
 (function () {
     const script = () => {
         const scriptName = 'CnCTA Main Finder';
-        const alliances = [
-            { id: 1876, name: 'TwojStrary' },
-            { id: 359, name: 'Inadmissible (alts)' },
-            { id: 1808, name: 'Venerating Coin Coin (alts)' },
-            { id: 1864, name: 'Venerating Quackers (alts)' },
-            { id: 149, name: 'digitalYakuza' },
-            { id: 126, name: 'WarYakuza' },
-            { id: 595, name: 'analogYakuza' },
-            { id: 1827, name: 'Iron Wolves' },
-            { id: 112, name: 'Madness' },
-            { id: 751, name: 'Hakuna Matata' },
-        ];
         const init = () => {
             const Main = qx.Class.define('Main', {
                 type: 'singleton',
@@ -56,6 +44,7 @@
                     onOpenMainWindow: function () {
                         if (!this.mainWindow) {
                             this.createMainWindow();
+                            this.refreshSelect();
                         }
                         this.mainWindow.open();
                         this.refreshWindow();
@@ -90,9 +79,6 @@
                         // this.mainTextfield.setWidth(200);
                         // this.mainWindow.add(this.mainTextfield);
                         this.mainSelect = new qx.ui.form.SelectBox();
-                        alliances.forEach(a => {
-                            this.mainSelect.add(new qx.ui.form.ListItem(a.name, null, a));
-                        });
                         this.mainWindow.add(this.mainSelect);
                         const buttonShow = new qx.ui.form.Button('Show');
                         buttonShow.addListener('execute', this.onShow, this);
@@ -106,6 +92,21 @@
                         const totalFetched = Object.values(this.mainBases).filter(m => m.fetched).length;
                         this.mainLabelAuth.set({ value: `${totalFetched} / ${totalBases}`, textColor: 'white' });
                     },
+                    refreshSelect: function () {
+                        ClientLib.Net.CommunicationManager.GetInstance().SendSimpleCommand('RankingGetData', {
+                            ascending: true,
+                            firstIndex: 0,
+                            lastIndex: 50,
+                            rankingType: 0,
+                            sortColumn: 2,
+                            view: 1,
+                        }, phe.cnc.Util.createEventDelegate(ClientLib.Net.CommandResult, this, this.onRankingGetDataReceived), null);
+                    },
+                    onRankingGetDataReceived: function (context, data) {
+                        data.a.forEach(a => {
+                            this.mainSelect.add(new qx.ui.form.ListItem(a.an, null, { id: a.a }));
+                        });
+                    },
                     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                     // Main Base finder
                     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -116,7 +117,6 @@
                         this.updateMarkerSize();
                         this.mainLabelAuth.set({ value: 'Fetching...', textColor: 'white' });
                         ClientLib.Net.CommunicationManager.GetInstance().SendSimpleCommand('GetPublicAllianceInfo', {
-                            // id: this.mainTextfield.getValue(),
                             id: this.mainSelect.getModelSelection().getItem(0).id,
                         }, phe.cnc.Util.createEventDelegate(ClientLib.Net.CommandResult, this, this.onAllianceInfoReceived), null);
                     },
