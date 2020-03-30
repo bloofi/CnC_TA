@@ -238,7 +238,6 @@
                         this.removeMarkers();
                     },
                     onCheckboxFavorite: function () {
-                        console.log('fav', this.favoriteCheckbox.getValue());
                         if (this.favoriteCheckbox.getValue()) {
                             if (this.selectedAlliance && !this.favorites.some(f => f.id === this.selectedAlliance.i)) {
                                 this.favorites.push({
@@ -283,7 +282,7 @@
                     },
                     onGetPublicPlayerInfo: function (context, data) {
                         if (data && data.c) {
-                            const idMain = data.c.reduce((p, c) => (c.p > p ? c.i : p), -1);
+                            const idMain = data.c.reduce((p, c) => (c.p > p.p ? c : p), data.c[0]).i;
                             this.players[`pid-${data.i}`] = Object.assign(Object.assign({}, this.players[`pid-${data.i}`]), { c: data.c.map(cc => (Object.assign(Object.assign({}, cc), { pn: data.n, isMain: cc.i === idMain, isGhost: null }))), isFetched: true });
                             data.c.forEach(b => {
                                 this.bases[`b-${b.i}`] = Object.assign(Object.assign({}, b), { isFetched: false, isMain: b.i === idMain, marker: null });
