@@ -1,6 +1,6 @@
 "use strict";
 // ==UserScript==
-// @version	    2020.03.30
+// @version	    2020.03.31
 // @name        CnCTA Base Finder
 // @downloadURL https://github.com/bloofi/CnC_TA/raw/master/CnCTA-Base-Finder.user.js
 // @updateURL   https://github.com/bloofi/CnC_TA/raw/master/CnCTA-Base-Finder.user.js
@@ -64,7 +64,7 @@
                         this.refreshWindow();
                     },
                     createMainWindow: function () {
-                        this.mainWindow = new qx.ui.window.Window('Main bases').set({
+                        this.mainWindow = new qx.ui.window.Window('Base Finder').set({
                             contentPaddingTop: 5,
                             contentPaddingBottom: 5,
                             contentPaddingRight: 2,
