@@ -33,6 +33,7 @@
                     allianceLabel: null,
                     fetchLabel: null,
                     favoriteCheckbox: null,
+                    buttonRefresh: null,
                     buttonShowGhosts: null,
                     buttonShowMains: null,
                     buttonClear: null,
@@ -130,6 +131,9 @@
                         this.favoriteCheckbox.addListener('changeValue', this.onCheckboxFavorite, this);
                         this.favoriteCheckbox.setEnabled(false);
                         allianceRow.add(this.favoriteCheckbox);
+                        this.buttonRefresh = new qx.ui.form.Button('Refresh');
+                        this.buttonRefresh.addListener('execute', this.onButtonRefresh, this);
+                        allianceRow.add(this.buttonRefresh);
                         this.mainWindow.add(allianceRow);
                         this.fetchLabel = new qx.ui.basic.Label().set({
                             textAlign: 'left',
@@ -226,6 +230,16 @@
                             this.fetchLabel.set({ value: 'Please type something to search', textColor: 'red' });
                         }
                     },
+                    onButtonRefresh: function () {
+                        if (this.selectedAlliance) {
+                            const id = this.selectedAlliance.i;
+                            this.resetAlliance();
+                            this.fetchLabel.set({ value: 'Fetching alliance by ID...', textColor: 'silver' });
+                            ClientLib.Net.CommunicationManager.GetInstance().SendSimpleCommand('GetPublicAllianceInfo', {
+                                id,
+                            }, phe.cnc.Util.createEventDelegate(ClientLib.Net.CommandResult, this, this.onGetPublicAllianceInfo), null);
+                        }
+                    },
                     onButtonShowGhosts: function () {
                         this.showMarkers(Object.values(this.bases).filter(b => b.g));
                     },
@@ -311,6 +325,7 @@
                         this.buttonShowMains.setEnabled(false);
                         this.buttonClear.setEnabled(false);
                         this.favoriteCheckbox.setEnabled(false);
+                        this.buttonRefresh.setEnabled(false);
                         this.refreshWindow();
                     },
                     updateAllianceInfo: function (data) {
@@ -319,6 +334,7 @@
                         this.buttonShowMains.setEnabled(true);
                         this.buttonClear.setEnabled(true);
                         this.favoriteCheckbox.setEnabled(true);
+                        this.buttonRefresh.setEnabled(true);
                         data.m
                             .sort((a, b) => a.n.localeCompare(b.n))
                             .forEach(m => {
