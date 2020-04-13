@@ -1,12 +1,12 @@
 "use strict";
 // ==UserScript==
-// @version	    2020.04.12
+// @version	    2020.04.14
 // @name        CnCTA Base Scanner
+// @author      bloofi (https://github.com/bloofi)
 // @downloadURL https://github.com/bloofi/CnC_TA/raw/master/CnCTA-Base-Scanner.user.js
 // @updateURL   https://github.com/bloofi/CnC_TA/raw/master/CnCTA-Base-Scanner.user.js
 // @include     http*://prodgame*.alliances.commandandconquer.com/*/index.aspx*
 // @include     http*://cncapp*.alliances.commandandconquer.com/*/index.aspx*
-// @author      bloofi (https://github.com/bloofi)
 // ==/UserScript==
 (function () {
     const script = () => {
@@ -14,15 +14,29 @@
         const storageKey = 'cncta-base-scanner';
         const scanMaxRetries = 7;
         const biCncLVUrl = 'https://spy-cnc.fr/CNC/bi/cnclv/layout/';
-        const icons = {
-            cnclv: 'https://spy-cnc.fr/CNC/bi/favicon-cnclv.ico',
-            scan: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAALEwAACxMBAJqcGAAAAd5JREFUSIntlLFr20AYxd87yVWXdMmQoUNK6L9QCIU2mbx091oKDV1sH4IQD6WFhi4djCWLQiEYMrQUNAXSrRDyLwQPmVriTXsH2Vj+vg6RwcSJLDdDl7zxvrv3u+/u3QF3+t/ioglRFK2qalVVN0iOAfRV9cRaO7oVIAxDD8A+SQvAm62JSEJy11r7bRHAFJgfk9wTke8kn6jq/TRNH4jIC2PMb5Jfu93uu3/qIAzDTyT3ALxqNpuHV+txHDtJkvQAvCRZbTQaP0t3EEXRKkkrIofXmQNArVabqOobAL9Udb+ogzmAqlYBeI7jfC5aaK0dqeoBgM0gCNaWAWwAgIj0iwC5zgDAGPO4NCCPIobD4b0SgGm6xqUBAPoA4Hnes0XuJJ8DyNI0PS8NUNUTEUmMMW/jOHZuWthutx8C2AFw1Gq1/pQGWGtHJHcBPE2SpJe/iTnzSqXyA8CKiHy5yRwofsnvSX7AZRQPcHmhXn4sOwBWAEBEBqq67fv+xVKAHFLNIZszwxmAo3znPWPMehFk4WcHAEEQrOVRHKdpej49806n84jkaRGkFKBIVyGu627V6/XBtH7tZ7eMfN+/UNVtERkYY9azLHs9W781YApxXXdLRD5OJpPCVN1pTn8BTmff2pUBWMIAAAAASUVORK5CYII='
+        const scoreTibMap = {
+            t6: 40,
+            t5: 20,
+            t4: 8,
+            t3: 2,
+        };
+        const scorePowerMap = {
+            t8: 9,
+            t7: 3,
+            t6: 1,
         };
         const defaultStorage = {
             window: {},
             cache: {},
         };
         const init = () => {
+            const icons = {
+                cnclv: 'https://spy-cnc.fr/CNC/bi/favicon-cnclv.ico',
+                scan: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAALEwAACxMBAJqcGAAAAd5JREFUSIntlLFr20AYxd87yVWXdMmQoUNK6L9QCIU2mbx091oKDV1sH4IQD6WFhi4djCWLQiEYMrQUNAXSrRDyLwQPmVriTXsH2Vj+vg6RwcSJLDdDl7zxvrv3u+/u3QF3+t/ioglRFK2qalVVN0iOAfRV9cRaO7oVIAxDD8A+SQvAm62JSEJy11r7bRHAFJgfk9wTke8kn6jq/TRNH4jIC2PMb5Jfu93uu3/qIAzDTyT3ALxqNpuHV+txHDtJkvQAvCRZbTQaP0t3EEXRKkkrIofXmQNArVabqOobAL9Udb+ogzmAqlYBeI7jfC5aaK0dqeoBgM0gCNaWAWwAgIj0iwC5zgDAGPO4NCCPIobD4b0SgGm6xqUBAPoA4Hnes0XuJJ8DyNI0PS8NUNUTEUmMMW/jOHZuWthutx8C2AFw1Gq1/pQGWGtHJHcBPE2SpJe/iTnzSqXyA8CKiHy5yRwofsnvSX7AZRQPcHmhXn4sOwBWAEBEBqq67fv+xVKAHFLNIZszwxmAo3znPWPMehFk4WcHAEEQrOVRHKdpej49806n84jkaRGkFKBIVyGu627V6/XBtH7tZ7eMfN+/UNVtERkYY9azLHs9W781YApxXXdLRD5OJpPCVN1pTn8BTmff2pUBWMIAAAAASUVORK5CYII=',
+                tib: ClientLib.File.FileManager.GetInstance().GetPhysicalPath('ui/common/icn_res_tiberium.png'),
+                power: ClientLib.File.FileManager.GetInstance().GetPhysicalPath('ui/common/icn_res_power.png'),
+                target: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAAdgAAAHYBTnsmCAAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAKRSURBVDiNpVNdSBRRFD73zuxOtuuo41/hRlFq/rcm2kNbRmSmomZUZkZEkGQtlUGERKQ9SPUQ9RAhWdmSmltaoKVgYZhRKKZCElkpoYnrKu7uuD9jztwebAbXfCj63r5zvnPPOR/3oE9rg8opAvvgNwgh0xSFTsEiiIDCkUQuLYwRhExocE1wDwHStLjgb4AAZeOlEmz+odW6h08ymdgElisyRq68dXfb8qQU/6W09EJC+XMq3YP6XCZBHyu53W5E0W+xL8v4pmcZtDszDXyj+eX4+dPvvWqMfpoUQODAGMOqxpZ89froCEetqXW0MK9hbmzU43r3ZoJvrO9alpjEatN2baYDg13O9rax+R2QE2OEqwAAOOPZaCYqJtJ2v/K55eK5biIIktxldnTEM7I365mnv3eAPVCYxoRHaAAAEMFVigeazJxEcdJqtVaU9Snjaf1orFYjmVvLStuQSk37Hz4W84cH9vqaLnFywiVzn3g9G/a4+YRotUwMb0m6BwDg7uuxT165/EgY/uaQdcoEkt0mSHb7T5kTWoURhTGiKC+j56amPMQ1o+iUZMBx41bKL4Ad2hR3GwDA09ttG05Nvk54hyL2idezK67dOGKvNbW6OjumAAAwQsQAADDT8qKfDgkNCSwpjVO6jf3wiDwvyjyorGI7EedEm+nOwHwxMWCJkAIAgOmbVz8KX78MccXGnJAL5XqgacU8igtS6Woasnw2Jm9wNJhfCYOfnQAAEiEHvb4yHRrKhFWb9zBRMZES7+BHCvKqtDvSddzJM7sBUxTf9LR9vKS4U34YAcr2NshiEb5npNZxR4vWaTJy4zDGQGZnRWfH625bdeUHee+F+O9jokVMmikC++Xgv50zmH4B/JMOCtMZe/oAAAAASUVORK5CYII=',
+            };
             const Main = qx.Class.define('Main', {
                 type: 'singleton',
                 extend: qx.core.Object,
@@ -46,6 +60,10 @@
                     filterOutpostCheckbox: null,
                     filterBaseCheckbox: null,
                     filterPlayerCheckbox: null,
+                    filterScoreTibSlider: null,
+                    filterScoreTibLabel: null,
+                    filterScorePowerSlider: null,
+                    filterScorePowerLabel: null,
                     buttonScan: null,
                     buttonClear: null,
                     scanResultComponent: null,
@@ -56,6 +74,7 @@
                         const mainDataInstance = ClientLib.Data.MainData.GetInstance();
                         const server = mainDataInstance.get_Server();
                         this.currentWid = server.get_WorldId();
+                        this.debouncedFilterResults = _.debounce(this.filterResults, 800);
                         const ScriptsButton = qx.core.Init.getApplication()
                             .getMenuBar()
                             .getScriptsButton();
@@ -76,10 +95,7 @@
                     },
                     createMainWindow: function () {
                         this.mainWindow = new qx.ui.window.Window('Base Scanner').set({
-                            contentPaddingTop: 0,
-                            contentPaddingBottom: 0,
-                            contentPaddingRight: 0,
-                            contentPaddingLeft: 0,
+                            contentPadding: 0,
                             width: 1000,
                             height: 700,
                             showMaximize: false,
@@ -135,6 +151,53 @@
                         scanFilterFrom.add(this.filterFromSelect);
                         toolbar.add(scanFilterFrom);
                         toolbar.add(new qx.ui.toolbar.Separator(10));
+                        const scanFilterScore = new qx.ui.groupbox.GroupBox('Scan Filter');
+                        scanFilterScore.setLayout(new qx.ui.layout.VBox(2));
+                        const rowTib = new qx.ui.container.Composite(new qx.ui.layout.Dock()).set({
+                            width: 150,
+                        });
+                        rowTib.add(this.createImage(icons.tib, 20, 20), { edge: 'west' });
+                        this.filterScoreTibSlider = new qx.ui.form.Slider().set({
+                            minimum: 0,
+                            maximum: 99,
+                            value: 20,
+                            singleStep: 3,
+                        });
+                        this.filterScoreTibSlider.addListener('changeValue', this.onSliderTibScore, this);
+                        rowTib.add(this.filterScoreTibSlider, { edge: 'center' });
+                        this.filterScoreTibLabel = new qx.ui.basic.Label('20').set({
+                            font: new qx.bom.Font(14),
+                            width: 20,
+                            toolTipText: [
+                                'Score is calculated as follow :',
+                                ...Object.entries(scoreTibMap).map(s => `<b>${s[1]} points</b> for each ${s[0]}`),
+                            ].join('<br>'),
+                        });
+                        rowTib.add(this.filterScoreTibLabel, { edge: 'east' });
+                        scanFilterScore.add(rowTib);
+                        const rowPower = new qx.ui.container.Composite(new qx.ui.layout.Dock()).set({
+                            width: 150,
+                        });
+                        rowPower.add(this.createImage(icons.power, 20, 20), { edge: 'west' });
+                        this.filterScorePowerSlider = new qx.ui.form.Slider().set({
+                            minimum: 0,
+                            maximum: 99,
+                            value: 0,
+                        });
+                        this.filterScorePowerSlider.addListener('changeValue', this.onSliderPowerScore, this);
+                        rowPower.add(this.filterScorePowerSlider, { edge: 'center' });
+                        this.filterScorePowerLabel = new qx.ui.basic.Label('0').set({
+                            font: new qx.bom.Font(14),
+                            width: 20,
+                            toolTipText: [
+                                'Score is calculated as follow :',
+                                ...Object.entries(scorePowerMap).map(s => `<b>${s[1]} points</b> for each ${s[0]}`),
+                            ].join('<br>'),
+                        });
+                        rowPower.add(this.filterScorePowerLabel, { edge: 'east' });
+                        scanFilterScore.add(rowPower);
+                        toolbar.add(scanFilterScore);
+                        toolbar.add(new qx.ui.toolbar.Separator(10));
                         this.mainLabel = new qx.ui.basic.Label().set({
                             value: '',
                             rich: true,
@@ -181,13 +244,15 @@
                                     const b = this.bases[this.currentScanID];
                                     const nbScanned = Object.values(this.bases).filter(r => ['FETCHED'].includes(r.status)).length;
                                     const nbTotal = Object.values(this.bases).filter(r => r.status !== 'CANCELED').length;
-                                    detail.push(`Items : <b>${nbScanned}</b> / <b>${nbTotal}</b>`);
+                                    const nbFiltered = Object.values(this.bases).filter(r => r.isFiltered).length;
+                                    detail.push(`Items : <b>${nbScanned}</b> / <b>${nbTotal}</b> (${nbTotal - nbFiltered} displayed)`);
                                     detail.push(`Currently scanning : <b>${b.type} ${b.x}:${b.y}</b> from <b>${b.from.get_Name()}</b> (${b.retry})`);
                                 }
                                 break;
                             case 'END':
                                 const nbTotal = Object.values(this.bases).filter(r => r.status !== 'CANCELED').length;
-                                detail.push(`<b>${nbTotal}</b> item(s) scanned.`);
+                                const nbFiltered = Object.values(this.bases).filter(r => r.isFiltered).length;
+                                detail.push(`<b>${nbTotal}</b> item(s) scanned. <b>${nbTotal - nbFiltered}</b> item(s) displayed.`);
                                 break;
                             default:
                                 detail.push('Unknown scan status');
@@ -228,16 +293,13 @@
                         });
                         this.buttonClear.set({ enabled: false });
                     },
-                    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-                    // Callbacks
-                    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-                    onGetPublicAllianceInfoByNameOrAbbreviation: function (context, data) {
-                        if (data && data.i) {
-                            this.updateAllianceInfo(data);
-                        }
-                        else {
-                            this.fetchLabel.set({ value: 'Invalid alliance name', textColor: 'red' });
-                        }
+                    onSliderTibScore: function () {
+                        this.filterScoreTibLabel.setValue(`${this.filterScoreTibSlider.getValue()}`);
+                        this.debouncedFilterResults();
+                    },
+                    onSliderPowerScore: function () {
+                        this.filterScorePowerLabel.setValue(`${this.filterScorePowerSlider.getValue()}`);
+                        this.debouncedFilterResults();
                     },
                     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                     // Scan
@@ -255,6 +317,8 @@
                         this.filterBaseCheckbox.set({ enabled: true });
                         this.filterPlayerCheckbox.set({ enabled: false });
                         this.filterFromSelect.set({ enabled: true });
+                        this.filterScoreTibSlider.set({ enabled: true });
+                        this.filterScorePowerSlider.set({ enabled: true });
                         this.buttonScan.set({
                             label: 'Scan',
                             enabled: true,
@@ -269,9 +333,11 @@
                         this.filterBaseCheckbox.set({ enabled: false });
                         this.filterPlayerCheckbox.set({ enabled: false });
                         this.filterFromSelect.set({ enabled: false });
+                        this.filterScoreTibSlider.set({ enabled: false });
+                        this.filterScorePowerSlider.set({ enabled: false });
                         this.buttonScan.set({
                             label: 'Stop',
-                            enabled: false
+                            enabled: false,
                         });
                         this.buttonClear.set({ enabled: false });
                         this.scanStatus = 'SCANNING';
@@ -376,6 +442,15 @@
                                 width: 1,
                             }),
                         });
+                        const header = new qx.ui.container.Composite(new qx.ui.layout.Dock()).set({
+                            backgroundColor: 'silver',
+                        });
+                        header.add(new qx.ui.basic.Label().set({
+                            value: `${sr.x}:${sr.y}`,
+                            rich: true,
+                            textColor: 'blue',
+                        }), { edge: 'west' });
+                        res.add(header, { edge: 'north' });
                         const grid = new qx.ui.container.Composite(new qx.ui.layout.Grid(1, 1));
                         grid.set({
                             width: 90,
@@ -384,6 +459,20 @@
                         });
                         switch (sr.status) {
                             case 'FETCHED':
+                                const scores = new qx.ui.container.Composite(new qx.ui.layout.HBox());
+                                scores.add(this.createImage(icons.tib));
+                                scores.add(new qx.ui.basic.Label().set({
+                                    value: `${sr.tibScore}`,
+                                    font: new qx.bom.Font(10),
+                                    textColor: 'black',
+                                }));
+                                scores.add(this.createImage(icons.power));
+                                scores.add(new qx.ui.basic.Label().set({
+                                    value: `${sr.powerScore}`,
+                                    font: new qx.bom.Font(10),
+                                    textColor: 'black',
+                                }));
+                                header.add(scores, { edge: 'east' });
                                 for (let y = 0; y < 8; y++) {
                                     for (let x = 0; x < 9; x++) {
                                         const cell = new qx.ui.core.Widget();
@@ -428,14 +517,19 @@
                                 break;
                         }
                         res.add(grid, { edge: 'center' });
-                        const actions = new qx.ui.container.Composite(new qx.ui.layout.HBox(5));
-                        const coords = new qx.ui.basic.Label().set({
-                            value: `${sr.x}:${sr.y}`,
-                            rich: true,
-                            textColor: 'blue',
+                        const footer = new qx.ui.container.Composite(new qx.ui.layout.HBox(5)).set({
+                            paddingLeft: 5,
                         });
-                        coords.addListener('execute', this.centerTo(sr.x, sr.y), this);
-                        actions.add(coords);
+                        const bTarget = new qx.ui.form.Button('', icons.target).set({
+                            decorator: null,
+                            backgroundColor: 'transparent',
+                            margin: 0,
+                            padding: 0,
+                            maxWidth: 16,
+                            maxHeight: 16,
+                        });
+                        bTarget.addListener('execute', this.centerTo(sr.x, sr.y), this);
+                        footer.add(bTarget);
                         if (sr.status === 'FETCHED') {
                             const bCnclv = new qx.ui.form.Button('', icons.cnclv).set({
                                 decorator: null,
@@ -446,11 +540,26 @@
                                 maxHeight: 16,
                             });
                             bCnclv.addListener('execute', this.openCncLV(sr), this);
-                            actions.add(bCnclv);
+                            footer.add(bCnclv);
                         }
-                        res.add(actions, { edge: 'south' });
+                        res.add(footer, { edge: 'south' });
                         return res;
                     },
+                    filterResults: function () {
+                        const minTib = this.filterScoreTibSlider.getValue();
+                        const minPower = this.filterScorePowerSlider.getValue();
+                        Object.values(this.bases).forEach(sr => {
+                            if (sr.status === 'FETCHED') {
+                                sr.isFiltered = sr.tibScore < minTib || sr.powerScore < minPower;
+                                sr.panel.removeAll();
+                                if (!sr.isFiltered) {
+                                    sr.panel.add(this.getGridLayout(sr), { edge: 'center' });
+                                }
+                            }
+                        });
+                        this.refreshLabel();
+                    },
+                    debouncedFilterResults: null,
                     checkAndFetch: function () {
                         if (this.scanStatus === 'FETCHING') {
                             if (this.currentScanID) {
@@ -500,8 +609,16 @@
                                         }
                                         break;
                                     case 'FETCHED':
+                                        const scores = this.computeScores(currentScan.layout);
+                                        currentScan.tibScore = scores[0];
+                                        currentScan.powerScore = scores[1];
+                                        currentScan.isFiltered =
+                                            currentScan.tibScore < this.filterScoreTibSlider.getValue() ||
+                                                currentScan.powerScore < this.filterScorePowerSlider.getValue();
                                         currentScan.panel.removeAll();
-                                        currentScan.panel.add(this.getGridLayout(currentScan), { edge: 'center' });
+                                        if (!currentScan.isFiltered) {
+                                            currentScan.panel.add(this.getGridLayout(currentScan), { edge: 'center' });
+                                        }
                                         this.bases[this.currentScanID] = currentScan;
                                         this.storage.cache[`${this.currentWid}-${currentScan.x}:${currentScan.y}`] = this.layoutToCncopt(currentScan.layout);
                                         this.flushStorage();
@@ -535,6 +652,13 @@
                             .get_Cities()
                             .get_AllCities().d);
                     },
+                    createImage: function (icon, w = 16, h = 16) {
+                        const image = new qx.ui.basic.Image(icon);
+                        image.setScale(true);
+                        image.setWidth(w);
+                        image.setHeight(h);
+                        return image;
+                    },
                     getCityLayout: function (city) {
                         const res = [[], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []];
                         for (let y = 0; y < 20; y++) {
@@ -565,7 +689,6 @@
                         return res.join('|');
                     },
                     cncoptToLayout: function (layout) {
-                        console.log('cncoptToLayout', layout);
                         return layout.split('').reduce((p, c, i) => {
                             if (i < 9 * 8) {
                                 p[Math.floor(i / 9)][i % 9] = c;
@@ -585,6 +708,46 @@
                             const cncopt = this.layoutToFullCncopt('F', 'N', `${sr.type} - ${sr.x}:${sr.y}`, sr.layout);
                             window.open(`${biCncLVUrl}${cncopt}`, `${sr.type} - ${sr.x}:${sr.y}`);
                         };
+                    },
+                    computeScores: function (layout) {
+                        const resTib = {
+                            t6: 0,
+                            t5: 0,
+                            t4: 0,
+                            t3: 0,
+                        };
+                        const resPower = {
+                            t8: 0,
+                            t7: 0,
+                            t6: 0,
+                        };
+                        layout.forEach((row, j) => {
+                            row.forEach((cell, i) => {
+                                if (cell === '.') {
+                                    let t = 0, p = 0;
+                                    for (let y = Math.max(0, j - 1); y <= Math.min(7, j + 1); y++) {
+                                        for (let x = Math.max(0, i - 1); x <= Math.min(8, i + 1); x++) {
+                                            if (!(x === i && y === j) && layout[y][x] === 't') {
+                                                t++;
+                                            }
+                                            if (!(x === i && y === j) && layout[y][x] === '.') {
+                                                p++;
+                                            }
+                                        }
+                                    }
+                                    if (t > 2) {
+                                        resTib[`t${t}`] = resTib[`t${t}`] + 1;
+                                    }
+                                    if (p > 5) {
+                                        resPower[`t${p}`] = resPower[`t${p}`] + 1;
+                                    }
+                                }
+                            });
+                        });
+                        return [
+                            ['t6', 't5', 't4', 't3'].reduce((p, c) => p + scoreTibMap[c] * resTib[c], 0),
+                            ['t8', 't7', 't6'].reduce((p, c) => p + scorePowerMap[c] * resPower[c], 0),
+                        ];
                     },
                     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                     // Storage
@@ -614,7 +777,8 @@
                     qx.core.Init &&
                     qx.core.Init.getApplication &&
                     qx.core.Init.getApplication() &&
-                    qx.core.Init.getApplication().initDone) {
+                    qx.core.Init.getApplication().initDone &&
+                    _) {
                     init();
                 }
                 else {
@@ -632,6 +796,10 @@
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     if (/commandandconquer\.com/i.test(document.domain)) {
         try {
+            const script_lodash = document.createElement('script');
+            script_lodash.type = 'text/javascript';
+            script_lodash.src = 'https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.15/lodash.min.js';
+            document.getElementsByTagName('head')[0].appendChild(script_lodash);
             const script_block = document.createElement('script');
             script_block.innerHTML = `(${script.toString()})();`;
             script_block.type = 'text/javascript';
