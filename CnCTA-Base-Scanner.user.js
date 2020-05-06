@@ -1,6 +1,6 @@
 "use strict";
 // ==UserScript==
-// @version	    2020.04.14
+// @version	    2020.05.06
 // @name        CnCTA Base Scanner
 // @author      bloofi (https://github.com/bloofi)
 // @downloadURL https://github.com/bloofi/CnC_TA/raw/master/CnCTA-Base-Scanner.user.js
@@ -245,7 +245,8 @@
                                     const nbScanned = Object.values(this.bases).filter(r => ['FETCHED'].includes(r.status)).length;
                                     const nbTotal = Object.values(this.bases).filter(r => r.status !== 'CANCELED').length;
                                     const nbFiltered = Object.values(this.bases).filter(r => r.isFiltered).length;
-                                    detail.push(`Items : <b>${nbScanned}</b> / <b>${nbTotal}</b> (${nbTotal - nbFiltered} displayed)`);
+                                    const nbCanceled = Object.values(this.bases).filter(r => r.isCanceled).length;
+                                    detail.push(`Items : <b>${nbScanned}</b> / <b>${nbTotal}</b> (${nbTotal - nbFiltered - nbCanceled} displayed)`);
                                     detail.push(`Currently scanning : <b>${b.type} ${b.x}:${b.y}</b> from <b>${b.from.get_Name()}</b> (${b.retry})`);
                                 }
                                 break;
@@ -337,7 +338,7 @@
                         this.filterScorePowerSlider.set({ enabled: false });
                         this.buttonScan.set({
                             label: 'Stop',
-                            enabled: false,
+                            enabled: true,
                         });
                         this.buttonClear.set({ enabled: false });
                         this.scanStatus = 'SCANNING';
@@ -552,7 +553,7 @@
                             if (sr.status === 'FETCHED') {
                                 sr.isFiltered = sr.tibScore < minTib || sr.powerScore < minPower;
                                 sr.panel.removeAll();
-                                if (!sr.isFiltered) {
+                                if (!sr.isFiltered && !sr.isCanceled) {
                                     sr.panel.add(this.getGridLayout(sr), { edge: 'center' });
                                 }
                             }
@@ -595,7 +596,7 @@
                                             if (currentScan.retry > scanMaxRetries) {
                                                 currentScan.status = 'CANCELED';
                                                 currentScan.panel.removeAll();
-                                                currentScan.panel.add(this.getGridLayout(currentScan), { edge: 'center' });
+                                                // currentScan.panel.add(this.getGridLayout(currentScan), { edge: 'center' });
                                                 this.bases[this.currentScanID] = currentScan;
                                                 this.findNext();
                                             }
@@ -616,7 +617,7 @@
                                             currentScan.tibScore < this.filterScoreTibSlider.getValue() ||
                                                 currentScan.powerScore < this.filterScorePowerSlider.getValue();
                                         currentScan.panel.removeAll();
-                                        if (!currentScan.isFiltered) {
+                                        if (!currentScan.isFiltered && !currentScan.isCanceled) {
                                             currentScan.panel.add(this.getGridLayout(currentScan), { edge: 'center' });
                                         }
                                         this.bases[this.currentScanID] = currentScan;
@@ -664,14 +665,23 @@
                         for (let y = 0; y < 20; y++) {
                             for (let x = 0; x < 9; x++) {
                                 switch (y > 16 ? 0 : city.GetResourceType(x, y)) {
-                                    case 0:
-                                        res[y][x] = '.';
-                                        break;
                                     case 1: // Crystal
                                         res[y][x] = 'c';
                                         break;
                                     case 2: // Tiberium
                                         res[y][x] = 't';
+                                        break;
+                                    case 4: // Woods
+                                        res[y][x] = 'j';
+                                        break;
+                                    case 5: // Scrub
+                                        res[y][x] = 'h';
+                                        break;
+                                    case 6: // Oil
+                                        res[y][x] = 'l';
+                                        break;
+                                    case 7: // Swamp
+                                        res[y][x] = 'k';
                                         break;
                                     default:
                                         res[y][x] = '.';
@@ -681,20 +691,28 @@
                         }
                         return res;
                     },
-                    layoutToCncopt: function (layout) {
-                        return layout.reduce((p, c) => `${p}${c.reduce((p2, c2) => `${p2}${c2}`, '')}`, '').substring(0, 9 * 8);
+                    layoutToCncopt: function (layout, includeOff = false) {
+                        const emptyOff = [...Array(9 * 4).keys()].map(() => '.').join('');
+                        const res = layout.reduce((p, c) => `${p}${c.reduce((p2, c2) => `${p2}${c2}`, '')}`, '').substring(0, 9 * 16);
+                        return `${res}${includeOff ? emptyOff : ''}`;
                     },
                     layoutToFullCncopt: function (baseFaction, offFaction, name, layout) {
-                        const res = ['3', baseFaction, offFaction, name, layout.reduce((p, c) => `${p}${c.reduce((p2, c2) => `${p2}${c2}`, '')}`, '')];
+                        const res = [
+                            '3',
+                            baseFaction,
+                            offFaction,
+                            encodeURI(name),
+                            this.layoutToCncopt(layout, true),
+                        ];
                         return res.join('|');
                     },
                     cncoptToLayout: function (layout) {
                         return layout.split('').reduce((p, c, i) => {
-                            if (i < 9 * 8) {
+                            if (i < 9 * 16) {
                                 p[Math.floor(i / 9)][i % 9] = c;
                             }
                             return p;
-                        }, [[], [], [], [], [], [], [], []]);
+                        }, [[], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []]);
                     },
                     centerTo: function (x, y) {
                         return function () {
