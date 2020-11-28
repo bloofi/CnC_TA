@@ -521,8 +521,7 @@
                                 grade: player.get_Title(),
                                 grade_icon_p: player.get_TitleIcon(),
                                 gradeLvl: 0,
-                                rank_name: Object.values(alliance.get_MemberData().d || {})
-                                    .map(d => d[1])
+                                rank_name: (alliance.get_MemberDataAsArray() || [])
                                     .filter(d => !!d)
                                     .reduce((p, c) => (p || c.Id === cities.get_CurrentOwnCity().get_PlayerId() ? c.RoleName : null), null) || '',
                                 faction: player.get_Faction() == 1 ? 'gdi' : player.get_Faction() == 2 ? 'nod' : '',
@@ -563,8 +562,7 @@
                                 rank: alliance.get_Rank(),
                                 score_avg: alliance.get_AverageScore(),
                                 score_tot: alliance.get_TotalScore(),
-                                members: Object.values(alliance.get_MemberData().d || {})
-                                    .map(d => d[1])
+                                members: (alliance.get_MemberDataAsArray() || [])
                                     .filter(d => !!d)
                                     .reduce((p, c) => (Object.assign(Object.assign({}, p), { [`${c.Id}`]: { name: c.Name, role: c.RoleName } })), {}),
                                 RelationStatus: (alliance.get_Relationships() || []).map(r => ({
