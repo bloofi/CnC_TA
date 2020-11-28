@@ -523,6 +523,7 @@
                                 gradeLvl: 0,
                                 rank_name: Object.values(alliance.get_MemberData().d || {})
                                     .map(d => d[1])
+                                    .filter(d => !!d)
                                     .reduce((p, c) => (p || c.Id === cities.get_CurrentOwnCity().get_PlayerId() ? c.RoleName : null), null) || '',
                                 faction: player.get_Faction() == 1 ? 'gdi' : player.get_Faction() == 2 ? 'nod' : '',
                                 score: player.get_ScorePoints(),
@@ -564,6 +565,7 @@
                                 score_tot: alliance.get_TotalScore(),
                                 members: Object.values(alliance.get_MemberData().d || {})
                                     .map(d => d[1])
+                                    .filter(d => !!d)
                                     .reduce((p, c) => (Object.assign(Object.assign({}, p), { [`${c.Id}`]: { name: c.Name, role: c.RoleName } })), {}),
                                 RelationStatus: (alliance.get_Relationships() || []).map(r => ({
                                     alliance_id: r.OtherAllianceId,
@@ -602,6 +604,7 @@
                             }
                         }
                         catch (e) {
+                            console.log('BIV5', e);
                             this.displayMessage('Error during BaseInfo update : VCM', logColors.ERROR);
                         }
                         // Compute research
