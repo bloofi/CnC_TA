@@ -243,7 +243,10 @@
                         this.loadStorage();
                         if (!!this.storage.token) {
                             this.token = this.storage.token;
+                            this.status = 'AUTHENTICATING';
                             this.collectData();
+                        } else {
+                            this.status = 'UNREGISTERED';
                         }
 
                         // Inject Button in Scripts menu
