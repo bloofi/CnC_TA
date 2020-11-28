@@ -11,7 +11,8 @@
 (function () {
     const script = () => {
         const scriptName = 'CnCTA BaseInfo V5';
-        const windowName = 'BaseInfo V5';
+        const menuName = 'BaseInfo V5';
+        const windowName = 'BaseInfo V5.0.1';
         const storageKey = 'cncta-BaseInfoV5';
         const biCncLVUrl = 'https://spy-cnc.fr/CNC/bi/cnclv/layout/';
         const biBackendUrl = 'https://spy-cnc.fr/CNC/bi/api.php';
@@ -221,7 +222,6 @@
                         this.loadStorage();
                         if (!!this.storage.token) {
                             this.token = this.storage.token;
-                            this.status = 'AUTHENTICATING';
                             this.collectData();
                         }
                         else {
@@ -231,7 +231,7 @@
                         const ScriptsButton = qx.core.Init.getApplication()
                             .getMenuBar()
                             .getScriptsButton();
-                        ScriptsButton.Add(windowName, icons.icon16);
+                        ScriptsButton.Add(menuName, icons.icon16);
                         const children = ScriptsButton.getMenu().getChildren();
                         const lastChild = children[children.length - 1];
                         lastChild.addListener('execute', this.onOpenMainWindow, this);
@@ -320,22 +320,15 @@
                         this.components.mainWindow.add(this.components.bottomLabel, { edge: 'south' });
                     },
                     refreshWindow: function () {
+                        if (!this.components.mainWindow) {
+                            return;
+                        }
                         switch (this.status) {
                             case 'INIT':
                                 this.components.panelStack.setSelection([this.components.panelStack.getChildren()[0]]);
                                 break;
                             case 'UNREGISTERED':
                                 this.components.panelStack.setSelection([this.components.panelStack.getChildren()[1]]);
-                                break;
-                            case 'AUTHENTICATING':
-                                this.components.panelStack.setSelection([this.components.panelStack.getChildren()[2]]);
-                                this.components.openAppButton.set({
-                                    enabled: false,
-                                });
-                                this.components.authLabel.set({
-                                    value: 'Authenticating...',
-                                    textColor: logColors.NORMAL_WHITE,
-                                });
                                 break;
                             case 'AUTHENTICATED':
                                 this.components.panelStack.setSelection([this.components.panelStack.getChildren()[2]]);
@@ -488,13 +481,11 @@
                             this.displayMessage('Key activated successfully', logColors.SUCCESS);
                             this.token = res.token;
                             this.storage.token = res.token;
+                            this.status = 'AUTHENTICATED';
                             this.saveStorage();
-                            this.status = 'AUTHENTICATING';
-                            this.refreshWindow();
                             // Premier envoi de données nécessaire afin de valider completement le token
                             this.collectData(res => {
                                 if (res) {
-                                    this.status = 'AUTHENTICATED';
                                     this.refreshWindow();
                                 }
                             });
@@ -710,7 +701,7 @@
                             });
                         }
                         catch (e) {
-                            console.log(e);
+                            console.log('BIV5', e);
                             this.displayMessage('Error during BaseInfo update : Research', logColors.ERROR);
                         }
                         // Compute bases
@@ -805,7 +796,7 @@
                             });
                         }
                         catch (e) {
-                            console.log(e);
+                            console.log('BIV5', e);
                             this.displayMessage('Error during BaseInfo update : Bases', logColors.ERROR);
                         }
                         // Compute Info player
@@ -817,14 +808,15 @@
                                     data.player.bases[i].id_base = b.i;
                                     data.player.bases[i].score = b.p;
                                 });
-                                console.log('>>> BaseInfo sending', data);
-                                this.sendData(data, cb);
+                                console.log('BIV5', '>>> sending', data);
+                                this.sendData(data, cb ? cb.bind(this) : null);
                             }
                             catch (e) {
+                                console.log('BIV5', e);
                                 this.displayMessage('Error during BaseInfo update : PlayerInfo', logColors.ERROR);
                             }
                         };
-                        ClientLib.Net.CommunicationManager.GetInstance().SendSimpleCommand('GetPublicPlayerInfoByName', { name: data.player.name }, phe.cnc.Util.createEventDelegate(ClientLib.Net.CommandResult, this, callBack), null);
+                        ClientLib.Net.CommunicationManager.GetInstance().SendSimpleCommand('GetPublicPlayerInfoByName', { name: data.player.name }, phe.cnc.Util.createEventDelegate(ClientLib.Net.CommandResult, this, callBack.bind(this)), null);
                     },
                     sendData: function (data, cb) {
                         this.callApi('bi.update', data, (res) => {
@@ -887,7 +879,7 @@
                                 }
                             })
                                 .catch(err => {
-                                console.log(err);
+                                console.log('BIV5', err);
                                 if (onError) {
                                     onError(err);
                                 }
@@ -907,10 +899,10 @@
                         }
                     },
                     onRequestDone: function (response) {
-                        console.log('Unimplemented Request Done', response);
+                        console.log('BIV5', 'Unimplemented Request Done', response);
                     },
                     onRequestError: function (error) {
-                        console.log('Unimplemented Request Error', error);
+                        console.log('BIV5', 'Unimplemented Request Error', error);
                     },
                     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                     // Utils
@@ -1042,7 +1034,7 @@
                 }
             }
             catch (e) {
-                console.log(scriptName, e);
+                console.log('BIV5', scriptName, e);
             }
         }
         checkForInit();
@@ -1058,7 +1050,7 @@
             document.getElementsByTagName('head')[0].appendChild(script_block);
         }
         catch (e) {
-            console.log('Failed to inject script', e);
+            console.log('BIV5', 'Failed to inject script', e);
         }
     }
 })();

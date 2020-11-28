@@ -23,11 +23,12 @@
         storage: Storage;
         status: Status;
     };
-    type Status = 'INIT' | 'UNREGISTERED' | 'AUTHENTICATING' | 'AUTHENTICATED';
+    type Status = 'INIT' | 'UNREGISTERED' | 'AUTHENTICATED';
     type RequestType = 'bi.token.req' | 'bi.token.ask.api' | 'layout.scan' | 'bi.update' | 'resa.request';
     const script = () => {
         const scriptName = 'CnCTA BaseInfo V5';
-        const windowName = 'BaseInfo V5';
+        const menuName = 'BaseInfo V5';
+        const windowName = 'BaseInfo V5.0.1';
         const storageKey = 'cncta-BaseInfoV5';
         const biCncLVUrl: string = 'https://spy-cnc.fr/CNC/bi/cnclv/layout/';
         const biBackendUrl: string = 'https://spy-cnc.fr/CNC/bi/api.php';
@@ -243,7 +244,6 @@
                         this.loadStorage();
                         if (!!this.storage.token) {
                             this.token = this.storage.token;
-                            this.status = 'AUTHENTICATING';
                             this.collectData();
                         } else {
                             this.status = 'UNREGISTERED';
@@ -253,7 +253,7 @@
                         const ScriptsButton = qx.core.Init.getApplication()
                             .getMenuBar()
                             .getScriptsButton();
-                        ScriptsButton.Add(windowName, icons.icon16);
+                        ScriptsButton.Add(menuName, icons.icon16);
 
                         const children = ScriptsButton.getMenu().getChildren();
                         const lastChild = children[children.length - 1];
@@ -357,22 +357,15 @@
                     },
 
                     refreshWindow: function() {
+                        if (!this.components.mainWindow) {
+                            return;
+                        }
                         switch (this.status) {
                             case 'INIT':
                                 this.components.panelStack.setSelection([this.components.panelStack.getChildren()[0]]);
                                 break;
                             case 'UNREGISTERED':
                                 this.components.panelStack.setSelection([this.components.panelStack.getChildren()[1]]);
-                                break;
-                            case 'AUTHENTICATING':
-                                this.components.panelStack.setSelection([this.components.panelStack.getChildren()[2]]);
-                                this.components.openAppButton.set({
-                                    enabled: false,
-                                });
-                                this.components.authLabel.set({
-                                    value: 'Authenticating...',
-                                    textColor: logColors.NORMAL_WHITE,
-                                });
                                 break;
                             case 'AUTHENTICATED':
                                 this.components.panelStack.setSelection([this.components.panelStack.getChildren()[2]]);
@@ -554,13 +547,11 @@
                                 this.displayMessage('Key activated successfully', logColors.SUCCESS);
                                 this.token = res.token;
                                 this.storage.token = res.token;
+                                this.status = 'AUTHENTICATED';
                                 this.saveStorage();
-                                this.status = 'AUTHENTICATING';
-                                this.refreshWindow();
                                 // Premier envoi de données nécessaire afin de valider completement le token
                                 this.collectData(res => {
                                     if (res) {
-                                        this.status = 'AUTHENTICATED';
                                         this.refreshWindow();
                                     }
                                 });
@@ -788,7 +779,7 @@
                                     }
                                 });
                         } catch (e) {
-                            console.log(e);
+                            console.log('BIV5', e);
                             this.displayMessage('Error during BaseInfo update : Research', logColors.ERROR);
                         }
 
@@ -896,7 +887,7 @@
                                 }
                             });
                         } catch (e) {
-                            console.log(e);
+                            console.log('BIV5', e);
                             this.displayMessage('Error during BaseInfo update : Bases', logColors.ERROR);
                         }
 
@@ -910,16 +901,17 @@
                                     data.player.bases[i].score = b.p;
                                 });
 
-                                console.log('>>> BaseInfo sending', data);
-                                this.sendData(data, cb);
+                                console.log('BIV5', '>>> sending', data);
+                                this.sendData(data, cb ? cb.bind(this) : null);
                             } catch (e) {
+                                console.log('BIV5', e);
                                 this.displayMessage('Error during BaseInfo update : PlayerInfo', logColors.ERROR);
                             }
                         };
                         ClientLib.Net.CommunicationManager.GetInstance().SendSimpleCommand(
                             'GetPublicPlayerInfoByName',
                             { name: data.player.name },
-                            phe.cnc.Util.createEventDelegate(ClientLib.Net.CommandResult, this, callBack),
+                            phe.cnc.Util.createEventDelegate(ClientLib.Net.CommandResult, this, callBack.bind(this)),
                             null,
                         );
                     },
@@ -993,7 +985,7 @@
                                     }
                                 })
                                 .catch(err => {
-                                    console.log(err);
+                                    console.log('BIV5', err);
                                     if (onError) {
                                         onError(err);
                                     } else {
@@ -1011,11 +1003,11 @@
                     },
 
                     onRequestDone: function(response: any): void {
-                        console.log('Unimplemented Request Done', response);
+                        console.log('BIV5', 'Unimplemented Request Done', response);
                     },
 
                     onRequestError: function(error: any): void {
-                        console.log('Unimplemented Request Error', error);
+                        console.log('BIV5', 'Unimplemented Request Error', error);
                     },
 
                     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1171,7 +1163,7 @@
                     window.setTimeout(checkForInit, 1000);
                 }
             } catch (e) {
-                console.log(scriptName, e);
+                console.log('BIV5', scriptName, e);
             }
         }
         checkForInit();
@@ -1188,7 +1180,7 @@
             script_block.type = 'text/javascript';
             document.getElementsByTagName('head')[0].appendChild(script_block);
         } catch (e) {
-            console.log('Failed to inject script', e);
+            console.log('BIV5', 'Failed to inject script', e);
         }
     }
 })();
