@@ -18,21 +18,70 @@
     type Storage = {
         [k: string]: any;
     };
+    type Status = 'INIT' | 'UNREGISTERED' | 'AUTHENTICATED';
+    type ScanStatus = 'READY' | 'SCANNING' | 'FETCHING' | 'END';
+    type RequestType = 'bi.token.req' | 'bi.token.ask.api' | 'layout.scan' | 'bi.update' | 'resa.request';
+    type ScannerItemStatus = 'WAITING' | 'FETCHING' | 'FETCHED' | 'CANCELED' | 'SENDING' | 'SENT';
+    type ScanDto = {
+        from: {
+            bid: number;
+            name: string;
+            x: number;
+            y: number;
+        };
+        city?: any;
+        cityId: number;
+        x: number;
+        y: number;
+        type: string;
+        status: ScannerItemStatus;
+        retry: number;
+        layout: any;
+    };
     type Members = {
+        status: Status;
+        scanStatus: ScanStatus;
+        wid: number;
+        pid: number;
+        token: string;
+        scanObjs: { [id: string]: ScanDto };
+
         scanList: Layout[];
         storage: Storage;
-        status: Status;
+
+        components: {
+            mainWindow: any;
+            bottomLabel: any;
+            panelStack: any;
+            panels: {
+                init: any;
+                unRegistered: any;
+                authenticated: any;
+            };
+            spykeyTextField: any;
+            authLabel: any;
+            updateLabel: any;
+            askKeyButton: any;
+            validateKeyButton: any;
+            openAppButton: any;
+            scanButton: any;
+        };
+        intervals: {
+            updateTimeout: any;
+            nextUpdate: any;
+        };
     };
-    type Status = 'INIT' | 'UNREGISTERED' | 'AUTHENTICATED';
-    type RequestType = 'bi.token.req' | 'bi.token.ask.api' | 'layout.scan' | 'bi.update' | 'resa.request';
+
     const script = () => {
         const scriptName = 'CnCTA BaseInfo V5';
         const menuName = 'BaseInfo V5';
-        const windowName = 'BaseInfo V5.0.1';
+        const windowName = 'BaseInfo V5.1.0';
         const storageKey = 'cncta-BaseInfoV5';
         const biCncLVUrl: string = 'https://spy-cnc.fr/CNC/bi/cnclv/layout/';
         const biBackendUrl: string = 'https://spy-cnc.fr/CNC/bi/api.php';
-        const biUpdateTimeout = 1000 * 60 * 3;
+        const biUpdateDelay = 1000 * 60 * 3;
+        const biScanDelay = 1000 * 60 * 5;
+        const biScanMaxRetries = 10;
         const logColors = {
             NORMAL_BLACK: 'rgba(10, 10, 10, 1)',
             NORMAL_WHITE: 'rgba(220, 220, 220, 1)',
@@ -183,6 +232,10 @@
             const icons = {
                 icon16:
                     'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAsTAAALEwEAmpwYAAAGmGlUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPD94cGFja2V0IGJlZ2luPSLvu78iIGlkPSJXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQiPz4gPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iQWRvYmUgWE1QIENvcmUgNS42LWMxNDUgNzkuMTYzNDk5LCAyMDE4LzA4LzEzLTE2OjQwOjIyICAgICAgICAiPiA8cmRmOlJERiB4bWxuczpyZGY9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkvMDIvMjItcmRmLXN5bnRheC1ucyMiPiA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIiB4bWxuczp4bXA9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8iIHhtbG5zOnhtcE1NPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvbW0vIiB4bWxuczpzdEV2dD0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL3NUeXBlL1Jlc291cmNlRXZlbnQjIiB4bWxuczpwaG90b3Nob3A9Imh0dHA6Ly9ucy5hZG9iZS5jb20vcGhvdG9zaG9wLzEuMC8iIHhtbG5zOmRjPSJodHRwOi8vcHVybC5vcmcvZGMvZWxlbWVudHMvMS4xLyIgeG1wOkNyZWF0b3JUb29sPSJBZG9iZSBQaG90b3Nob3AgQ0MgMjAxOSAoV2luZG93cykiIHhtcDpDcmVhdGVEYXRlPSIyMDE5LTAzLTE1VDAwOjI3KzAxOjAwIiB4bXA6TWV0YWRhdGFEYXRlPSIyMDIwLTExLTIyVDE1OjMwOjQ4KzAxOjAwIiB4bXA6TW9kaWZ5RGF0ZT0iMjAyMC0xMS0yMlQxNTozMDo0OCswMTowMCIgeG1wTU06SW5zdGFuY2VJRD0ieG1wLmlpZDpiZGU4YjVjZC0zYTM5LTQ4NGItOWM0Zi1kMmFhNTI4YzBkNTkiIHhtcE1NOkRvY3VtZW50SUQ9ImFkb2JlOmRvY2lkOnBob3Rvc2hvcDpkOTM3OGIxYS04ZTc3LWQyNGYtYWRiNC1iNjc4NjFjZjVjZjkiIHhtcE1NOk9yaWdpbmFsRG9jdW1lbnRJRD0ieG1wLmRpZDo5ZTc2YzgyMS04ZTY0LTJhNDItODBmYy1lMTc5ZTE2NmVkMGEiIHBob3Rvc2hvcDpDb2xvck1vZGU9IjMiIGRjOmZvcm1hdD0iaW1hZ2UvcG5nIj4gPHhtcE1NOkhpc3Rvcnk+IDxyZGY6U2VxPiA8cmRmOmxpIHN0RXZ0OmFjdGlvbj0iY3JlYXRlZCIgc3RFdnQ6aW5zdGFuY2VJRD0ieG1wLmlpZDo5ZTc2YzgyMS04ZTY0LTJhNDItODBmYy1lMTc5ZTE2NmVkMGEiIHN0RXZ0OndoZW49IjIwMTktMDMtMTVUMDA6MjcrMDE6MDAiIHN0RXZ0OnNvZnR3YXJlQWdlbnQ9IkFkb2JlIFBob3Rvc2hvcCBDQyAyMDE5IChXaW5kb3dzKSIvPiA8cmRmOmxpIHN0RXZ0OmFjdGlvbj0ic2F2ZWQiIHN0RXZ0Omluc3RhbmNlSUQ9InhtcC5paWQ6NzhkZjUyZTYtYTgxYi0yNDQ5LWE4ZDgtM2I4ZDhhYTQ1ZjNjIiBzdEV2dDp3aGVuPSIyMDE5LTAzLTE1VDAwOjI3KzAxOjAwIiBzdEV2dDpzb2Z0d2FyZUFnZW50PSJBZG9iZSBQaG90b3Nob3AgQ0MgMjAxOSAoV2luZG93cykiIHN0RXZ0OmNoYW5nZWQ9Ii8iLz4gPHJkZjpsaSBzdEV2dDphY3Rpb249InNhdmVkIiBzdEV2dDppbnN0YW5jZUlEPSJ4bXAuaWlkOmJkZThiNWNkLTNhMzktNDg0Yi05YzRmLWQyYWE1MjhjMGQ1OSIgc3RFdnQ6d2hlbj0iMjAyMC0xMS0yMlQxNTozMDo0OCswMTowMCIgc3RFdnQ6c29mdHdhcmVBZ2VudD0iQWRvYmUgUGhvdG9zaG9wIENDIDIwMTkgKFdpbmRvd3MpIiBzdEV2dDpjaGFuZ2VkPSIvIi8+IDwvcmRmOlNlcT4gPC94bXBNTTpIaXN0b3J5PiA8L3JkZjpEZXNjcmlwdGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gPD94cGFja2V0IGVuZD0iciI/PoiF5Z8AAAD6SURBVDgRY/j///8aIM4AYm80HADEyUBcCMRFOPBSBiCRCMQgWh0NS0DF8eFcEOEExG7/sYNHUDlcBhQxQBU4/McNfgKxID4D3IHYHknDEyA2BOLbSGLSQKwHxA1QLITPgKdQye1IYsxAnIXE18JnwEsgTgLi51D+V6jiDCQ1yvgMQAZvgNgFqridWANANl5FCsDDUMU5xBoAijp2ID6HJAYKVD9iDXgDldyFJAaK6kBiDXgIxJxAfB5JzJUUAz4jhQEMmOLzgj008+BLiSxAXIcrHYRDFaRgwb7QRARSp4EkjpKZ1gFxGjRToWNQ4EVAs240kngOLDsDAJbFfh8CgT6cAAAAAElFTkSuQmCC',
+                iconDark:
+                    'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAsTAAALEwEAmpwYAAAGmGlUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPD94cGFja2V0IGJlZ2luPSLvu78iIGlkPSJXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQiPz4gPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iQWRvYmUgWE1QIENvcmUgNS42LWMxNDUgNzkuMTYzNDk5LCAyMDE4LzA4LzEzLTE2OjQwOjIyICAgICAgICAiPiA8cmRmOlJERiB4bWxuczpyZGY9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkvMDIvMjItcmRmLXN5bnRheC1ucyMiPiA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIiB4bWxuczp4bXA9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8iIHhtbG5zOnhtcE1NPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvbW0vIiB4bWxuczpzdEV2dD0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL3NUeXBlL1Jlc291cmNlRXZlbnQjIiB4bWxuczpwaG90b3Nob3A9Imh0dHA6Ly9ucy5hZG9iZS5jb20vcGhvdG9zaG9wLzEuMC8iIHhtbG5zOmRjPSJodHRwOi8vcHVybC5vcmcvZGMvZWxlbWVudHMvMS4xLyIgeG1wOkNyZWF0b3JUb29sPSJBZG9iZSBQaG90b3Nob3AgQ0MgMjAxOSAoV2luZG93cykiIHhtcDpDcmVhdGVEYXRlPSIyMDE5LTAzLTE1VDAwOjI3KzAxOjAwIiB4bXA6TWV0YWRhdGFEYXRlPSIyMDIwLTExLTI5VDE1OjI2OjQ0KzAxOjAwIiB4bXA6TW9kaWZ5RGF0ZT0iMjAyMC0xMS0yOVQxNToyNjo0NCswMTowMCIgeG1wTU06SW5zdGFuY2VJRD0ieG1wLmlpZDozYTBiZTllZC0xZDMwLTA5NDEtYmYyNS04N2ZjZDYwM2IxOTYiIHhtcE1NOkRvY3VtZW50SUQ9ImFkb2JlOmRvY2lkOnBob3Rvc2hvcDpiZTEzN2I1OS1jYTc5LWNkNGYtODM0My00MDZhNTFlOTY1NTQiIHhtcE1NOk9yaWdpbmFsRG9jdW1lbnRJRD0ieG1wLmRpZDo5ZTc2YzgyMS04ZTY0LTJhNDItODBmYy1lMTc5ZTE2NmVkMGEiIHBob3Rvc2hvcDpDb2xvck1vZGU9IjMiIGRjOmZvcm1hdD0iaW1hZ2UvcG5nIj4gPHhtcE1NOkhpc3Rvcnk+IDxyZGY6U2VxPiA8cmRmOmxpIHN0RXZ0OmFjdGlvbj0iY3JlYXRlZCIgc3RFdnQ6aW5zdGFuY2VJRD0ieG1wLmlpZDo5ZTc2YzgyMS04ZTY0LTJhNDItODBmYy1lMTc5ZTE2NmVkMGEiIHN0RXZ0OndoZW49IjIwMTktMDMtMTVUMDA6MjcrMDE6MDAiIHN0RXZ0OnNvZnR3YXJlQWdlbnQ9IkFkb2JlIFBob3Rvc2hvcCBDQyAyMDE5IChXaW5kb3dzKSIvPiA8cmRmOmxpIHN0RXZ0OmFjdGlvbj0ic2F2ZWQiIHN0RXZ0Omluc3RhbmNlSUQ9InhtcC5paWQ6NzhkZjUyZTYtYTgxYi0yNDQ5LWE4ZDgtM2I4ZDhhYTQ1ZjNjIiBzdEV2dDp3aGVuPSIyMDE5LTAzLTE1VDAwOjI3KzAxOjAwIiBzdEV2dDpzb2Z0d2FyZUFnZW50PSJBZG9iZSBQaG90b3Nob3AgQ0MgMjAxOSAoV2luZG93cykiIHN0RXZ0OmNoYW5nZWQ9Ii8iLz4gPHJkZjpsaSBzdEV2dDphY3Rpb249InNhdmVkIiBzdEV2dDppbnN0YW5jZUlEPSJ4bXAuaWlkOjNhMGJlOWVkLTFkMzAtMDk0MS1iZjI1LTg3ZmNkNjAzYjE5NiIgc3RFdnQ6d2hlbj0iMjAyMC0xMS0yOVQxNToyNjo0NCswMTowMCIgc3RFdnQ6c29mdHdhcmVBZ2VudD0iQWRvYmUgUGhvdG9zaG9wIENDIDIwMTkgKFdpbmRvd3MpIiBzdEV2dDpjaGFuZ2VkPSIvIi8+IDwvcmRmOlNlcT4gPC94bXBNTTpIaXN0b3J5PiA8L3JkZjpEZXNjcmlwdGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gPD94cGFja2V0IGVuZD0iciI/PlbBoeMAAAD5SURBVDgRY2BgYFgDxBlA7I2GA4A4GYgLgbgIB14KxAyJDBCgjoYlGAiDXBDhBMRuQPwfC34ElcMFQK4AK3DAYQAI/wRiQXwGuAOxPZKGJ0BsCMS3kcSkgVgPiBugWAifAU+hktuRxJiBOAuJr4XPgJdAnATEz6H8r1DFGUhqlPEZgIzfALELVHE7sQaAbLyKFICHoYpziDUAFHXsQHwOSQwUqH7EGvAGKrkLSQwU1YHEGvAQiDmB+DySmCspBnxGCgMYNsXnBXto5sGXElmAuA5XOgiHKkjBgn2hiQgENJDEUTLTOiBOg2YqdAwKvAioTdFI4jmw7AwA1RmA8rDMVl0AAAAASUVORK5CYII=',
+                layout24:
+                    'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYAgMAAACdGdVrAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAAJUExURQAAAADIABIe/7zn7ZYAAAABdFJOUwBA5thmAAAAJ0lEQVQI12NgQAGsASCIncIHWAO4ArgWICjWBQgKH+BaAILYKRQAAPUxEe8meeNQAAAAAElFTkSuQmCC',
                 tib: ClientLib.File.FileManager.GetInstance().GetPhysicalPath('ui/common/icn_res_tiberium.png'),
                 cry: ClientLib.File.FileManager.GetInstance().GetPhysicalPath('ui/common/icn_res_chrystal.png'),
                 pow: ClientLib.File.FileManager.GetInstance().GetPhysicalPath('ui/common/icn_res_power.png'),
@@ -195,10 +248,15 @@
                     // Globals
                     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                     status: 'INIT',
+                    scanStatus: 'READY',
                     wid: null,
                     pid: null,
                     token: null,
-                    updateTimeout: biUpdateTimeout,
+                    isScanAuto: false,
+                    lastScanId: 0,
+                    currentScanID: null,
+                    lastScanTime: null,
+                    scanObjs: {},
 
                     //////////////////////// DATA
                     scanList: [],
@@ -216,15 +274,22 @@
                         },
                         spykeyTextField: null,
                         authLabel: null,
-                        updateLabel: null,
+                        openAboutButton: null,
                         askKeyButton: null,
                         validateKeyButton: null,
                         openAppButton: null,
+                        openLayoutButton: null,
+                        updateLabel: null,
                         scanButton: null,
+                        scanAutoCheckbox: null,
+                        scanLabel: null,
+                        scanDetailLabel: null,
                     },
                     intervals: {
                         updateTimeout: null,
                         nextUpdate: null,
+                        scanTimeout: null,
+                        nextScan: null,
                     },
 
                     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -269,12 +334,12 @@
                     },
 
                     createMainWindow: function() {
-                        this.components.mainWindow = new qx.ui.window.Window(windowName, icons.icon16).set({
+                        this.components.mainWindow = new qx.ui.window.Window(windowName, icons.iconDark).set({
                             contentPaddingTop: 0,
                             contentPaddingBottom: 0,
                             contentPaddingRight: 0,
                             contentPaddingLeft: 0,
-                            width: 250,
+                            width: 300,
                             height: 300,
                             showMaximize: false,
                             showMinimize: false,
@@ -302,8 +367,12 @@
 
                         // Panel non activated
                         this.components.panels.unRegistered = new qx.ui.container.Composite(new qx.ui.layout.VBox(5));
+                        this.components.openAboutButton = new qx.ui.form.Button('About');
+                        this.components.openAboutButton.addListener('execute', this.onOpenAboutButton, this);
+                        this.components.panels.unRegistered.add(this.components.openAboutButton);
                         this.components.panels.unRegistered.add(
                             new qx.ui.basic.Label().set({
+                                allowGrowX: true,
                                 value: `Ask an activation key by clicking the button below`,
                                 rich: true,
                                 textColor: logColors.NORMAL_WHITE,
@@ -314,13 +383,14 @@
                         this.components.panels.unRegistered.add(this.components.askKeyButton);
                         this.components.panels.unRegistered.add(
                             new qx.ui.basic.Label().set({
+                                allowGrowX: true,
                                 value: `Wait a few seconds to receive a message containing your activation key.<br/>Copy paste the activation key in the field below and activate your account.`,
                                 rich: true,
                                 textColor: logColors.NORMAL_WHITE,
                             }),
                         );
                         this.components.spykeyTextField = new qx.ui.form.TextField().set({
-                            width: 150,
+                            allowGrowX: true,
                         });
                         this.components.panels.unRegistered.add(this.components.spykeyTextField);
                         this.components.validateKeyButton = new qx.ui.form.Button('Validate key');
@@ -331,27 +401,83 @@
                         // Panel activated
                         this.components.panels.authenticated = new qx.ui.container.Composite(new qx.ui.layout.VBox(5));
                         this.components.authLabel = new qx.ui.basic.Label('Authenticated').set({
+                            allowGrowX: true,
                             textAlign: 'center',
                             rich: true,
                             textColor: logColors.SUCCESS,
                         });
                         this.components.panels.authenticated.add(this.components.authLabel);
-                        this.components.openAppButton = new qx.ui.form.Button('Open App');
+                        const buttonsApp = new qx.ui.container.Composite(new qx.ui.layout.Dock()).set({
+                            allowGrowX: true,
+                            decorator: new qx.ui.decoration.Decorator().set({
+                                colorTop: logColors.NORMAL_WHITE,
+                                styleTop: 'solid',
+                                widthTop: 2,
+                            }),
+                            padding: 10,
+                        });
+                        this.components.openAppButton = new qx.ui.form.Button('Open App', icons.icon16);
                         this.components.openAppButton.addListener('execute', this.onOpenAppButton, this);
-                        this.components.panels.authenticated.add(this.components.openAppButton);
+                        buttonsApp.add(this.components.openAppButton, { edge: 'west' });
+                        this.components.openLayoutButton = new qx.ui.form.Button('Open Layouts', icons.layout24);
+                        this.components.openLayoutButton.addListener('execute', this.onOpenLayoutButton, this);
+                        buttonsApp.add(this.components.openLayoutButton, { edge: 'east' });
+                        this.components.panels.authenticated.add(buttonsApp);
+
                         this.components.updateLabel = new qx.ui.basic.Label('').set({
+                            allowGrowX: true,
                             textAlign: 'left',
                             rich: true,
                             textColor: logColors.NORMAL_WHITE,
                         });
                         this.components.panels.authenticated.add(this.components.updateLabel);
+                        const buttonsScan = new qx.ui.container.Composite(new qx.ui.layout.Dock()).set({
+                            allowGrowX: true,
+                            decorator: new qx.ui.decoration.Decorator().set({
+                                colorTop: logColors.NORMAL_WHITE,
+                                styleTop: 'solid',
+                                widthTop: 2,
+                            }),
+                            padding: 10,
+                        });
+
+                        this.components.scanButton = new qx.ui.form.Button('Scan');
+                        this.components.scanButton.addListener('execute', this.onScanButton, this);
+                        buttonsScan.add(this.components.scanButton, { edge: 'center' });
+                        this.components.scanAutoCheckbox = new qx.ui.form.CheckBox('Scan auto').set({
+                            textColor: logColors.NORMAL_WHITE,
+                        });
+                        this.components.scanAutoCheckbox.addListener('changeValue', this.onScanAutoCheckbox, this);
+                        buttonsScan.add(this.components.scanAutoCheckbox, { edge: 'east' });
+                        this.components.panels.authenticated.add(buttonsScan);
+                        this.components.scanLabel = new qx.ui.basic.Label('').set({
+                            allowGrowX: true,
+                            textAlign: 'left',
+                            rich: true,
+                            textColor: logColors.NORMAL_WHITE,
+                        });
+                        this.components.panels.authenticated.add(this.components.scanLabel);
+                        this.components.scanDetailLabel = new qx.ui.basic.Label('').set({
+                            allowGrowX: true,
+                            textAlign: 'left',
+                            rich: true,
+                            textColor: logColors.NORMAL_WHITE,
+                        });
+                        this.components.panels.authenticated.add(this.components.scanDetailLabel);
+
                         this.components.panelStack.add(this.components.panels.authenticated);
 
                         // bottom label
                         this.components.bottomLabel = new qx.ui.basic.Label('').set({
+                            allowGrowX: true,
                             textAlign: 'left',
                             rich: true,
                             textColor: logColors.NORMAL_WHITE,
+                            decorator: new qx.ui.decoration.Decorator().set({
+                                colorTop: logColors.NORMAL_WHITE,
+                                styleTop: 'solid',
+                                widthTop: 2,
+                            }),
                         });
                         this.components.mainWindow.add(this.components.bottomLabel, { edge: 'south' });
                     },
@@ -376,15 +502,97 @@
                                     value: 'Authenticated',
                                     textColor: logColors.SUCCESS,
                                 });
+                                switch (this.scanStatus) {
+                                    case 'READY':
+                                    case 'END':
+                                        this.components.scanButton.set({
+                                            label: 'Scan',
+                                            enabled: !this.isScanAuto,
+                                        });
+                                        this.components.scanAutoCheckbox.set({
+                                            enabled: true,
+                                        });
+                                        break;
+                                    case 'SCANNING':
+                                    case 'FETCHING':
+                                        this.components.scanButton.set({
+                                            label: 'Stop',
+                                            enabled: !this.isScanAuto,
+                                        });
+                                        this.components.scanAutoCheckbox.set({
+                                            enabled: false,
+                                        });
+                                        break;
+                                    default:
+                                        break;
+                                }
+                                this.refreshScanLabel();
                                 break;
                         }
+                    },
+
+                    refreshScanLabel: function() {
+                        const detail = [];
+                        switch (this.scanStatus) {
+                            case 'READY':
+                                this.displayMessageScan('Ready to scan');
+                                if (this.isScanAuto) {
+                                    detail.push(`The <b>Scan auto</b> is useful if you keep your account running while AFK.`);
+                                    detail.push(
+                                        `Don't forget to <u>uncheck</u> <b>Scan auto</b> when you are actively playing or it may conflict with your actions.`,
+                                    );
+                                } else {
+                                    detail.push('All scanned layouts are <b>shared and visible</b> by other players from your alliance.');
+                                    detail.push('Click on <b>Open Layouts</b> button above to see them.');
+                                }
+                                break;
+                            case 'SCANNING':
+                                this.displayMessageScan('Detecting all new reachable items...');
+                                break;
+                            case 'FETCHING':
+                                this.displayMessageScan('Scanning...');
+                                if (this.currentScanID) {
+                                    const b = this.scanObjs[this.currentScanID];
+                                    if (b) {
+                                        const nbScanned = (Object.values(this.scanObjs) as ScanDto[]).filter(r =>
+                                            ['FETCHED', 'SENDING', 'SENT'].includes(r.status),
+                                        ).length;
+                                        const nbTotal = (Object.values(this.scanObjs) as ScanDto[]).filter(r => r.status !== 'CANCELED').length;
+                                        const nbCanceled = (Object.values(this.scanObjs) as ScanDto[]).filter(r => r.status === 'CANCELED').length;
+                                        const nbSent = (Object.values(this.scanObjs) as ScanDto[]).filter(r => r.status === 'SENT').length;
+                                        detail.push(`Items : <b>${nbScanned}</b> / <b>${nbTotal}</b> (${nbCanceled} canceled, ${nbSent} sent)`);
+                                        detail.push(`Currently scanning : <b>${b.type} ${b.x}:${b.y}</b> from <b>${b.from.name}</b> (${b.retry})`);
+                                    }
+                                }
+                                break;
+                            case 'END':
+                                const d = new Date();
+                                this.displayMessageScan(`Scan finished at ${this.currentDateTime(this.lastScanTime)}`);
+                                const nbTotal = (Object.values(this.scanObjs) as ScanDto[]).filter(r => r.status !== 'CANCELED').length;
+                                const nbSent = (Object.values(this.scanObjs) as ScanDto[]).filter(r => r.status === 'SENT').length;
+                                detail.push(`<b>${nbTotal}</b> item(s) scanned. <b>${nbSent}</b> item(s) sent.`);
+                                if (this.isScanAuto) {
+                                    detail.push(`The <b>Scan auto</b> is useful if you keep your account running while AFK.`);
+                                    detail.push(
+                                        `Don't forget to <u>uncheck</u> <b>Scan auto</b> when you are actively playing or it may conflict with your actions.`,
+                                    );
+                                } else {
+                                    detail.push('All scanned layouts are <b>shared and visible</b> by other players from your alliance.');
+                                    detail.push('Click on <b>Open Layouts</b> button above to see them.');
+                                }
+                                break;
+                            default:
+                                this.displayMessageScan('Unknown scan status');
+                                break;
+                        }
+                        this.displayMessageScanDetail(detail.join('<br>'));
                     },
 
                     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                     // UI Methods
                     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-                    displayMessage: function(message: string, color: string = '#000000') {
+                    displayMessage: function(message: string, color: string = logColors.NORMAL_BLACK) {
                         if (this.components.bottomLabel) {
                             this.components.bottomLabel.set({
                                 value: message,
@@ -393,11 +601,29 @@
                         }
                     },
 
-                    displayMessageUpdate: function(message: string, color: string = '#000000') {
+                    displayMessageUpdate: function(message: string) {
                         if (this.components.updateLabel) {
                             this.components.updateLabel.set({
                                 value: message,
-                                textColor: color,
+                                textColor: logColors.NORMAL_WHITE,
+                            });
+                        }
+                    },
+
+                    displayMessageScan: function(message: string) {
+                        if (this.components.scanLabel) {
+                            this.components.scanLabel.set({
+                                value: message,
+                                textColor: logColors.NORMAL_WHITE,
+                            });
+                        }
+                    },
+
+                    displayMessageScanDetail: function(message: string) {
+                        if (this.components.scanDetailLabel) {
+                            this.components.scanDetailLabel.set({
+                                value: message,
+                                textColor: logColors.NORMAL_WHITE,
                             });
                         }
                     },
@@ -438,19 +664,6 @@
                         });
                     },
 
-                    planNextUpdate: function() {
-                        clearInterval(this.intervals.updateTimeout);
-                        clearInterval(this.intervals.nextUpdate);
-                        const goal = new Date().getTime() + this.updateTimeout;
-                        this.intervals.nextUpdate = setInterval(() => {
-                            this.displayMessageUpdate(
-                                `Next update : ${ClientLib.Vis.VisMain.FormatTimespan((goal - new Date().getTime()) / 1000)}`,
-                                logColors.NORMAL_WHITE,
-                            );
-                        }, 1000);
-                        this.intervals.updateTimeout = setTimeout(this.collectData.bind(this), this.updateTimeout);
-                    },
-
                     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                     // UI Events
                     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -467,27 +680,225 @@
                         this.onManageTableRefreshButton();
                     },
 
+                    onOpenAboutButton: function() {
+                        window.open(`https://spy-cnc.fr/CNC/bi/bi5/about`, 'BaseInfo V5', '');
+                    },
+
                     onOpenAppButton: function() {
                         window.open(`https://spy-cnc.fr/CNC/bi/bi5/alliance/${this.token}`, 'BaseInfo V5', '');
                     },
 
+                    onOpenLayoutButton: function() {
+                        window.open(`https://spy-cnc.fr/CNC/bi/bi5/layout/${this.token}`, 'BaseInfo V5', '');
+                    },
+
+                    onScanButton: function() {
+                        if (['SCANNING', 'FETCHING'].includes(this.scanStatus)) {
+                            this.stopScan();
+                        } else {
+                            this.startScan();
+                        }
+                    },
+
+                    onScanAutoCheckbox: function() {
+                        this.isScanAuto = this.components.scanAutoCheckbox.getValue();
+                        this.refreshWindow();
+                        if (this.isScanAuto) {
+                            this.planNextScan();
+                        } else {
+                            if (['SCANNING', 'FETCHING'].includes(this.scanStatus)) {
+                                this.stopScan();
+                            } else {
+                                clearInterval(this.intervals.scanTimeout);
+                                clearInterval(this.intervals.nextScan);
+                            }
+                        }
+                    },
+
                     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-                    // Game Callbacks
+                    // Scan
                     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-                    onManageGetPublicCityInfoById: function(context, data: CityInfo) {
-                        const i = this.toutouList.findIndex(t => t.gamePlayerId === this.selectedToutouId);
-                        this.toutouList[i] = {
-                            ...this.toutouList[i],
-                            city: {
-                                id: data.i,
-                                name: data.n,
-                                x: data.x,
-                                y: data.y,
-                                isGhost: data.g,
-                            },
-                        };
-                        this.refreshPageManage();
+                    planNextScan: function() {
+                        clearInterval(this.intervals.scanTimeout);
+                        clearInterval(this.intervals.nextScan);
+                        if (['READY', 'END'].includes(this.scanStatus)) {
+                            const goal = new Date().getTime() + biScanDelay;
+                            this.intervals.nextScan = setInterval(() => {
+                                if (['SCANNING', 'FETCHING'].includes(this.scanStatus) || goal < 0) {
+                                    clearInterval(this.intervals.nextScan);
+                                } else {
+                                    this.displayMessageScan(
+                                        `Next scan : <b>${ClientLib.Vis.VisMain.FormatTimespan((goal - new Date().getTime()) / 1000)}</b>`,
+                                        logColors.NORMAL_WHITE,
+                                    );
+                                }
+                            }, 1000);
+                            this.intervals.scanTimeout = setTimeout(this.startScan.bind(this), biScanDelay);
+                        }
+                    },
+
+                    startScan: function() {
+                        this.scanStatus = 'SCANNING';
+                        this.scanObjs = {};
+                        clearInterval(this.intervals.nextScan);
+                        this.refreshWindow();
+                        this.getOwnCitiesAsArray().forEach(b => {
+                            ClientLib.Vis.VisMain.GetInstance().CenterGridPosition(b.get_PosX(), b.get_PosY());
+                            ClientLib.Vis.VisMain.GetInstance().Update();
+                            ClientLib.Vis.VisMain.GetInstance().ViewUpdate();
+                            const region = ClientLib.Vis.VisMain.GetInstance().get_Region();
+                            for (let x = b.get_PosX() - 11; x < b.get_PosX() + 11; x++) {
+                                for (let y = b.get_PosY() - 11; y < b.get_PosY() + 11; y++) {
+                                    const obj = region.GetObjectFromPosition(x * region.get_GridWidth(), y * region.get_GridHeight());
+                                    if (obj && obj.get_Id) {
+                                        const distance = ClientLib.Base.Util.CalculateDistance(b.get_PosX(), b.get_PosY(), obj.get_RawX(), obj.get_RawY());
+                                        if (parseInt(distance) < 11) {
+                                            if (obj.get_Id() > this.lastScanId) {
+                                                switch (obj.get_VisObjectType()) {
+                                                    case ClientLib.Vis.VisObject.EObjectType.RegionNPCBase:
+                                                    case ClientLib.Vis.VisObject.EObjectType.RegionNPCCamp:
+                                                        // On ne scan que les nouveaux pops
+                                                        this.scanObjs[obj.get_Id()] = {
+                                                            from: {
+                                                                bid: b.get_Id(),
+                                                                name: b.get_Name(),
+                                                                x: b.get_PosX(),
+                                                                y: b.get_PosY(),
+                                                            },
+                                                            city: obj,
+                                                            cityId: obj.get_Id(),
+                                                            x: obj.get_RawX(),
+                                                            y: obj.get_RawY(),
+                                                            type:
+                                                                obj.get_VisObjectType() === ClientLib.Vis.VisObject.EObjectType.RegionNPCBase ? 'Base' : 'Camp',
+                                                            status: 'WAITING',
+                                                            retry: 0,
+                                                        } as ScanDto;
+                                                        break;
+                                                    default:
+                                                        break;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                        this.lastScanId = (Object.values(this.scanObjs) as ScanDto[]).reduce((p, c) => Math.max(p, c.cityId), this.lastScanId);
+                        this.scanStatus = 'FETCHING';
+                        this.checkAndFetch();
+                    },
+
+                    checkAndFetch: function() {
+                        if (this.scanStatus === 'FETCHING') {
+                            if (this.currentScanID) {
+                                this.refreshScanLabel();
+                                const currentScan: ScanDto = this.scanObjs[this.currentScanID];
+                                switch (currentScan.status) {
+                                    case 'WAITING':
+                                        ClientLib.Data.MainData.GetInstance()
+                                            .get_Cities()
+                                            .set_CurrentCityId(currentScan.cityId);
+                                        ClientLib.Net.CommunicationManager.GetInstance().UserAction();
+                                        this.scanObjs[this.currentScanID].status = 'FETCHING';
+                                        this.checkAndFetch();
+                                        break;
+                                    case 'FETCHING':
+                                        const data = ClientLib.Data.MainData.GetInstance()
+                                            .get_Cities()
+                                            .GetCity(currentScan.cityId);
+                                        if (!!data && !!data.get_OwnerId()) {
+                                            this.scanObjs[this.currentScanID].layout = this.getCityLayout(data);
+                                            this.scanObjs[this.currentScanID].status = 'FETCHED';
+                                            this.checkAndFetch();
+                                        } else {
+                                            if (currentScan.retry > biScanMaxRetries) {
+                                                this.scanObjs[this.currentScanID].status = 'CANCELED';
+                                                this.findNext();
+                                            } else {
+                                                this.scanObjs[this.currentScanID].retry++;
+                                                setTimeout(this.checkAndFetch.bind(this), 200);
+                                            }
+                                        }
+                                        break;
+                                    case 'FETCHED':
+                                        const fetchedItems = (Object.values(this.scanObjs) as ScanDto[]).filter(b => b.status === 'FETCHED');
+                                        if (fetchedItems.length >= 5) {
+                                            fetchedItems.forEach(f => {
+                                                this.scanObjs[f.cityId].status = 'SENDING';
+                                            });
+                                            this.sendScans(fetchedItems);
+                                        }
+                                        this.findNext();
+                                        break;
+                                    case 'CANCELED':
+                                        this.findNext();
+                                        break;
+                                    default:
+                                        break;
+                                }
+                            } else {
+                                this.findNext();
+                            }
+                        }
+                    },
+
+                    findNext: function() {
+                        const nextBase = (Object.values(this.scanObjs) as ScanDto[]).find(b => b.status === 'WAITING');
+                        if (nextBase) {
+                            this.currentScanID = nextBase.cityId;
+                            this.checkAndFetch();
+                        } else {
+                            this.stopScan();
+                        }
+                    },
+
+                    stopScan: function() {
+                        this.scanStatus = 'END';
+                        this.currentScanID = null;
+                        this.lastScanTime = new Date();
+                        clearInterval(this.intervals.scanTimeout);
+                        clearInterval(this.intervals.nextScan);
+                        const fetchedItems = (Object.values(this.scanObjs) as ScanDto[]).filter(b => b.status === 'FETCHED');
+                        fetchedItems.forEach(f => {
+                            this.scanObjs[f.cityId].status = 'SENDING';
+                        });
+                        this.sendScans(fetchedItems);
+                        if (this.isScanAuto) {
+                            this.planNextScan();
+                        }
+                        this.refreshWindow();
+                    },
+
+                    sendScans: function(items: ScanDto[]) {
+                        if (items.length) {
+                            this.callApi(
+                                'layout.scan',
+                                {
+                                    layouts: items.map(item => ({
+                                        id: item.cityId,
+                                        x: item.x,
+                                        y: item.y,
+                                        data: item.layout,
+                                    })),
+                                },
+                                (res: any) => {
+                                    items.forEach(item => {
+                                        this.displayMessage(`Scan Sync OK (${items.length} item(s))`, logColors.SUCCESS);
+                                        this.scanObjs[item.cityId].status = 'SENT';
+                                    });
+                                    this.refreshScanLabel();
+                                },
+                                (err: any) => {
+                                    this.displayMessage(`Scan Sync ERROR (${items.length} item(s))`, logColors.ERROR);
+                                    items.forEach(item => {
+                                        this.scanObjs[item.cityId].status = 'CANCELED';
+                                    });
+                                    this.refreshScanLabel();
+                                },
+                            );
+                        }
                     },
 
                     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -566,8 +977,23 @@
                     // bi.update : Envoi de données
                     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+                    planNextUpdate: function() {
+                        clearInterval(this.intervals.updateTimeout);
+                        clearInterval(this.intervals.nextUpdate);
+                        const goal = new Date().getTime() + biUpdateDelay;
+                        this.intervals.nextUpdate = setInterval(() => {
+                            this.displayMessageUpdate(
+                                `Next update : <b>${ClientLib.Vis.VisMain.FormatTimespan((goal - new Date().getTime()) / 1000)}</b>`,
+                                logColors.NORMAL_WHITE,
+                            );
+                        }, 1000);
+                        this.intervals.updateTimeout = setTimeout(this.collectData.bind(this), biUpdateDelay);
+                    },
+
                     collectData: function(cb: (res: boolean) => void) {
                         this.displayMessage('Updating...', logColors.NORMAL_WHITE);
+                        this.displayMessageUpdate('Updating...', logColors.NORMAL_WHITE);
+                        clearTimeout(this.intervals.updateTimeout);
                         clearTimeout(this.intervals.updateTimeout);
 
                         // Get instances
@@ -677,7 +1103,7 @@
                                 }
                             }
                         } catch (e) {
-                            console.log('BIV5', e)
+                            console.log('BIV5', e);
                             this.displayMessage('Error during BaseInfo update : VCM', logColors.ERROR);
                         }
 
@@ -902,7 +1328,7 @@
                                     data.player.bases[i].score = b.p;
                                 });
 
-                                console.log('BIV5', '>>> sending', data);
+                                // console.log('BIV5', '>>> sending', data);
                                 this.sendData(data, cb ? cb.bind(this) : null);
                             } catch (e) {
                                 console.log('BIV5', e);
@@ -939,12 +1365,6 @@
                             },
                         );
                     },
-
-                    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-                    // layout.scan : Envoi de scans
-                    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-                    sendScans: function() {},
 
                     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                     // API Requests
@@ -1084,6 +1504,38 @@
                         return res;
                     },
 
+                    getCityLayout: function(city: City) {
+                        const res = [[], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []];
+                        for (let y = 0; y < 20; y++) {
+                            for (let x = 0; x < 9; x++) {
+                                switch (y > 16 ? 0 : city.GetResourceType(x, y)) {
+                                    case 1: // Crystal
+                                        res[y][x] = 'c';
+                                        break;
+                                    case 2: // Tiberium
+                                        res[y][x] = 't';
+                                        break;
+                                    case 4: // Woods
+                                        res[y][x] = 'j';
+                                        break;
+                                    case 5: // Scrub
+                                        res[y][x] = 'h';
+                                        break;
+                                    case 6: // Oil
+                                        res[y][x] = 'l';
+                                        break;
+                                    case 7: // Swamp
+                                        res[y][x] = 'k';
+                                        break;
+                                    default:
+                                        res[y][x] = '.';
+                                        break;
+                                }
+                            }
+                        }
+                        return res;
+                    },
+
                     getBuildings: function(city) {
                         let res = null;
                         const cityBuildings = city.get_CityBuildingsData();
@@ -1118,6 +1570,24 @@
                     openCncLV: function(data: any) {
                         const cncopt = this.layoutToFullCncopt('F', 'N', `ToutouLayout - ${data[3].x}:${data[3].y}`, data[1]);
                         window.open(`${biCncLVUrl}${cncopt}`, `ToutouLayout - ${data[3].x}:${data[3].y}`);
+                    },
+
+                    currentDateTime: function(date: Date) {
+                        const d = date || new Date();
+                        return [
+                            d
+                                .getHours()
+                                .toString()
+                                .padStart(2, '0'),
+                            d
+                                .getMinutes()
+                                .toString()
+                                .padStart(2, '0'),
+                            d
+                                .getSeconds()
+                                .toString()
+                                .padStart(2, '0'),
+                        ].join(':');
                     },
 
                     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
