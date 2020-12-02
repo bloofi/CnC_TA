@@ -11,10 +11,17 @@
 (function () {
     const script = () => {
         const scriptName = 'CnCTA TargetWatcher Enhancer';
+        const colors = {
+            0: '#cccccc',
+            1: 'gold',
+            2: '#cccccc',
+            3: '#cccccc',
+        };
         const init = () => {
             /*
             qx.core.Init.getApplication().getUIItem(ClientLib.Data.Missions.PATH.OVL_PLAYAREA).getChildren()[10]
              */
+            const me = ClientLib.Data.MainData.GetInstance().get_Player();
             const updateLabel = () => {
                 const divParent = qx.core.Init.getApplication()
                     .getUIItem(ClientLib.Data.Missions.PATH.OVL_PLAYAREA)
@@ -58,8 +65,11 @@
                                 .get_MemberDataAsArray();
                             const watchers = Object.values(ClientLib.Data.MainData.GetInstance().get_AllianceWatchListWatcher()).reduce((p, c) => (typeof c === 'object' ? Object.values(c) : p), []);
                             if (watchers && watchers.length) {
-                                const res = watchers.filter(w => w.b === bid && w.p !== myId).map(w => (Object.assign(Object.assign({}, w), { name: members.find(m => m.Id === w.p).Name })));
-                                const label = `${res.map(w => w.name).join(', ')} ${res.length > 1 ? 'are' : 'is'} watching !`;
+                                const res = watchers.filter(w => w.b === bid && w.p !== myId).map(w => {
+                                    const m = members.find(m => m.Id === w.p);
+                                    return Object.assign(Object.assign({}, w), { n: m.Name, s: m.OnlineState });
+                                });
+                                const label = `${res.sort((a, b) => a.s === 1 ? 1 : 0).map(w => `<span style="color:${colors[w.s]};">${w.n}</span>`).join(', ')} ${res.length > 1 ? 'are' : 'is'} watching !`;
                                 divLabel.realSetValue(label);
                             }
                         };
@@ -77,6 +87,7 @@
             let regionZoomFactor = null;
             const markers = {};
             const citiesCache = {};
+            let checkTimeout = null;
             const removeMarkers = () => {
                 Object.entries(markers)
                     .filter(m => !!m[1])
@@ -116,19 +127,34 @@
             };
             const resizeMarkers = () => {
                 updateMarkerSize();
+                // Object.values(markers)
+                //     .filter(b => b.marker)
+                //     .forEach(b => {
+                //         b.marker.setWidth(baseMarkerWidth);
+                //         b.marker.setHeight(baseMarkerHeight);
+                //     });
             };
             const addMarker = (x, y, names) => {
-                const marker = new qx.ui.container.Composite(new qx.ui.layout.Dock());
+                const marker = new qx.ui.container.Composite(new qx.ui.layout.Dock()).set({
+                    decorator: new qx.ui.decoration.Decorator().set({
+                        color: 'rgba(200, 21, 21, 0.5)',
+                        style: 'solid',
+                        width: 2,
+                        radius: 5,
+                    }),
+                });
                 const label = new qx.ui.basic.Label('').set({
                     decorator: new qx.ui.decoration.Decorator().set({
                         color: 'rgba(200, 21, 21, 0.5)',
                         style: 'solid',
                         width: 1,
-                        radius: Math.floor(baseMarkerWidth / 10),
+                        radius: 5,
                     }),
+                    value: names.length ? `${names[0]}${names.length > 1 ? ', ...' : ''}` : '',
+                    toolTipText: names.length > 1 ? `Other watchers : ${names.slice(1).join(', ')}` : '',
                     textColor: '#ffffff',
                     textAlign: 'center',
-                    backgroundColor: 'rgba(200,21,21,0.8)',
+                    backgroundColor: 'rgba(200, 21, 21, 0.8)',
                     font: new qx.bom.Font(10, ['Arial']),
                     rich: true,
                     wrap: false,
@@ -149,7 +175,6 @@
                     names,
                     marker,
                 };
-                label.setValue(names.join(', '));
             };
             phe.cnc.Util.attachNetEvent(ClientLib.Vis.VisMain.GetInstance().get_Region(), 'ZoomFactorChange', ClientLib.Vis.ZoomFactorChange, this, resizeMarkers);
             phe.cnc.Util.attachNetEvent(ClientLib.Vis.VisMain.GetInstance().get_Region(), 'PositionChange', ClientLib.Vis.PositionChange, this, repositionMarkers);
@@ -157,45 +182,51 @@
             ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             // Map watchers
             ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            const propCampGetId = /return this\..*\.(.*);/.exec(new ClientLib.Vis.Region.RegionNPCCamp().__proto__.get_Id.toString())[1];
+            const propBaseGetId = /return this\..*\.(.*);/.exec(new ClientLib.Vis.Region.RegionNPCBase().__proto__.get_Id.toString())[1];
             const checkWatchers = () => {
-                const members = ClientLib.Data.MainData.GetInstance()
-                    .get_Alliance()
-                    .get_MemberDataAsArray();
-                const watchers = Object.values(ClientLib.Data.MainData.GetInstance().get_AllianceWatchListWatcher()).reduce((p, c) => (typeof c === 'object' ? Object.values(c) : p), []);
-                const allItems = Object.values(ClientLib.Vis.VisMain.GetInstance()
-                    .get_Region()
-                    .GetNPCCamps().d)
-                    .map((c) => ({ id: c.OCJPWC, x: c.posX, y: c.posY }))
-                    .concat(Object.values(ClientLib.Vis.VisMain.GetInstance()
-                    .get_Region()
-                    .GetNPCBases().d).map((c) => ({ id: c.JBPSLM, x: c.posX, y: c.posY })));
-                const markers = watchers.reduce((p, c) => {
-                    if (!p[`${c.b}`]) {
-                        let city = citiesCache[`${c.b}`];
-                        if (!city) {
-                            city = allItems.find(i => i.id === c.b);
-                            if (city) {
-                                citiesCache[`${c.b}`] = { x: city.x, y: city.y };
-                            }
-                        }
-                        p[`${c.b}`] = {
-                            b: c.b,
-                            isLoaded: !!city,
-                            x: city ? city.x : null,
-                            y: city ? city.y : null,
-                            names: [],
-                        };
-                    }
-                    p[`${c.b}`].names.push(members.find(m => m.Id === c.p).Name);
-                    return p;
-                }, {});
                 removeMarkers();
-                Object.entries(markers)
-                    .filter(([b, m]) => m.isLoaded)
-                    .forEach(([_b, m]) => {
-                    addMarker(m.x, m.y, m.names);
-                });
-                setTimeout(checkWatchers, 5000);
+                if (qx.core.Init.getApplication()
+                    .getPlayArea()
+                    .getViewMode() === 0) {
+                    const members = ClientLib.Data.MainData.GetInstance()
+                        .get_Alliance()
+                        .get_MemberDataAsArray();
+                    const watchers = Object.values(ClientLib.Data.MainData.GetInstance().get_AllianceWatchListWatcher()).reduce((p, c) => (typeof c === 'object' ? Object.values(c) : p), []);
+                    const allItems = Object.values(ClientLib.Vis.VisMain.GetInstance()
+                        .get_Region()
+                        .GetNPCCamps().d)
+                        .map((c) => ({ id: c[propCampGetId], x: c.posX, y: c.posY }))
+                        .concat(Object.values(ClientLib.Vis.VisMain.GetInstance()
+                        .get_Region()
+                        .GetNPCBases().d).map((c) => ({ id: c[propBaseGetId], x: c.posX, y: c.posY })));
+                    const markers = watchers.filter(c => c.p !== me.get_Id()).reduce((p, c) => {
+                        if (!p[`${c.b}`]) {
+                            let city = citiesCache[`${c.b}`];
+                            if (!city) {
+                                city = allItems.find(i => i.id === c.b);
+                                if (city) {
+                                    citiesCache[`${c.b}`] = { x: city.x, y: city.y };
+                                }
+                            }
+                            p[`${c.b}`] = {
+                                b: c.b,
+                                isLoaded: !!city,
+                                x: city ? city.x : null,
+                                y: city ? city.y : null,
+                                names: [],
+                            };
+                        }
+                        p[`${c.b}`].names.push(members.find(m => m.Id === c.p).Name);
+                        return p;
+                    }, {});
+                    Object.entries(markers)
+                        .filter(([b, m]) => m.isLoaded)
+                        .forEach(([_b, m]) => {
+                        addMarker(m.x, m.y, m.names);
+                    });
+                }
+                checkTimeout = setTimeout(checkWatchers, 3000);
             };
             checkWatchers();
         };
