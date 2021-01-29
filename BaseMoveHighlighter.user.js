@@ -1,39 +1,41 @@
 // ==UserScript==
-// @name           BaseMove Highlighter
-// @author         Bloofi
-// @version        1
-// @include        http*://prodgame*.alliances.commandandconquer.com/*/index.aspx*
-// @include        http*://cncapp*.alliances.commandandconquer.com/*/index.aspx*
+// @name        BaseMove Highlighter
+// @namespace   pouet
+// @include     http*://*.alliances.commandandconquer.com/*/index.aspx
+// @version     1.2
+// @grant       none
+// @author      Bloofi
 // ==/UserScript==
-(function () {
-    var wavy_main = function () {
+(function() {
+    var wavy_main = function() {
         console.log('wavy loaded');
+
         function Createwavy() {
             qx.Class.define("wavy", {
-                type : "singleton",
-                extend : qx.core.Object,
-                construct : function () {},
-                members : {
-                    _App : null,
-                    _MainData : null,
-                    _VisMain : null,
-                    wavyPanel : {
-                        grid : null,
-                        labelNb : null,
-                        labelNbVal : null,
-                        labelDetail : null,
-                        labelDetailVal : null
+                type: "singleton",
+                extend: qx.core.Object,
+                construct: function() {},
+                members: {
+                    _App: null,
+                    _MainData: null,
+                    _VisMain: null,
+                    wavyPanel: {
+                        grid: null,
+                        labelNb: null,
+                        labelNbVal: null,
+                        labelDetail: null,
+                        labelDetailVal: null
                     },
-                    regionCityMoveInfoAddonExists : null,
-                    gridWidth : null,
-                    gridHeight : null,
-                    baseMarkerWidth : null,
-                    baseMarkerHeight : null,
-                    regionZoomFactor : null,
-                    baseMarkerList : null,
-                    buttonActivated : false,
+                    regionCityMoveInfoAddonExists: null,
+                    gridWidth: null,
+                    gridHeight: null,
+                    baseMarkerWidth: null,
+                    baseMarkerHeight: null,
+                    regionZoomFactor: null,
+                    baseMarkerList: null,
+                    buttonActivated: false,
 
-                    initialize : function () {
+                    initialize: function() {
                         try {
                             this._App = qx.core.Init.getApplication();
                             this._MainData = ClientLib.Data.MainData.GetInstance();
@@ -76,50 +78,50 @@
                             this.wavyPanel.labelDetailVal.setAlignX("left");
 
                             this.wavyPanel.grid.add(this.wavyPanel.labelNb, {
-                                row : 0,
-                                column : 0
+                                row: 0,
+                                column: 0
                             });
                             this.wavyPanel.grid.add(this.wavyPanel.labelNbVal, {
-                                row : 0,
-                                column : 1
+                                row: 0,
+                                column: 1
                             });
                             this.wavyPanel.grid.add(this.wavyPanel.labelDetail, {
-                                row : 1,
-                                column : 0
+                                row: 1,
+                                column: 0
                             });
                             this.wavyPanel.grid.add(this.wavyPanel.labelDetailVal, {
-                                row : 1,
-                                column : 1
+                                row: 1,
+                                column: 1
                             });
 
                             /*
-                            var me = this ;
-                            var button = new qx.ui.form.Button("()").set({
-                                toolTipText: "Basemove Highlight",
-                                width: 32,
-                                  height: 32,
-                                  maxWidth: 32,
-                                  maxHeight: 32,
-                                  appearance: ("button-playarea-mode-frame"),
-                                  center: true
-                            });
-                            button.addListener("click", function (e) {
+							var me = this ;
+							var button = new qx.ui.form.Button("()").set({
+							    toolTipText: "Basemove Highlight",
+							    width: 32,
+								  height: 32,
+								  maxWidth: 32,
+								  maxHeight: 32,
+								  appearance: ("button-playarea-mode-frame"),
+								  center: true
+							});
+							button.addListener("click", function (e) {
 
-                                var fn = function(x,y){alert(x+","+y);} ;
-                                if(me.buttonActivated==true) {
-                                      me.baseMoveToolDeactivate() ;
-                                      phe.cnc.Util.detachNetEvent(me._VisMain.GetMouseTool(ClientLib.Vis.MouseTool.EMouseTool.SelectSupport), "OnMouseDown", ClientLib.Vis.MouseTool.OnMouseDown, me, fn);
-                                } else {
-                                     try {
-                                     phe.cnc.Util.attachNetEvent(me._VisMain.GetMouseTool(ClientLib.Vis.MouseTool.EMouseTool.SelectSupport), "OnMouseDown", ClientLib.Vis.MouseTool.OnMouseDown, me, fn);
-                                     } catch(e){alert(e);}
-                                 me.buttonActivated = true ;
+								var fn = function(x,y){alert(x+","+y);} ;
+								if(me.buttonActivated==true) {
+									  me.baseMoveToolDeactivate() ;
+								  	phe.cnc.Util.detachNetEvent(me._VisMain.GetMouseTool(ClientLib.Vis.MouseTool.EMouseTool.SelectSupport), "OnMouseDown", ClientLib.Vis.MouseTool.OnMouseDown, me, fn);
+								} else {
+									 try {
+									 phe.cnc.Util.attachNetEvent(me._VisMain.GetMouseTool(ClientLib.Vis.MouseTool.EMouseTool.SelectSupport), "OnMouseDown", ClientLib.Vis.MouseTool.OnMouseDown, me, fn);
+									 } catch(e){alert(e);}
+							     me.buttonActivated = true ;
                    me.baseMoveToolActivate();
-                                }
+								}
 
-                            }, this);
-                            this._App.getDesktop().add(button,{right: 150,top: 65});
-                            */
+							}, this);
+							this._App.getDesktop().add(button,{right: 150,top: 65});
+							*/
 
 
                         } catch (e) {
@@ -128,7 +130,7 @@
                         }
                     },
 
-                    baseMoveToolActivate : function () {
+                    baseMoveToolActivate: function() {
                         try {
                             this.getRegionZoomFactorAndSetMarkerSize();
                             phe.cnc.Util.attachNetEvent(this._VisMain.get_Region(), "PositionChange", ClientLib.Vis.PositionChange, this, this.repositionMarkers);
@@ -138,18 +140,18 @@
                         }
                     },
 
-                    baseMoveToolDeactivate : function () {
+                    baseMoveToolDeactivate: function() {
                         try {
-                            this.buttonActivated = false ;
+                            this.buttonActivated = false;
                             phe.cnc.Util.detachNetEvent(this._VisMain.get_Region(), "PositionChange", ClientLib.Vis.PositionChange, this, this.repositionMarkers);
                             phe.cnc.Util.detachNetEvent(this._VisMain.get_Region(), "ZoomFactorChange", ClientLib.Vis.ZoomFactorChange, this, this.resizeMarkers);
-                            this.removeMarkers() ;
+                            this.removeMarkers();
                         } catch (e) {
                             console.log(e);
                         }
                     },
 
-                    baseMoveToolCellChange : function (startX, startY) {
+                    baseMoveToolCellChange: function(startX, startY) {
                         try {
                             if (this.regionCityMoveInfoAddonExists == true) {
                                 webfrontend.gui.region.RegionCityMoveInfo.getInstance().remove(this.wavyPanel.grid);
@@ -164,18 +166,19 @@
                     },
 
 
-                    findBases : function (startX, startY) {
+                    findBases: function(startX, startY) {
                         try {
-                            var result = [] ;
-                            var total = 0 ;
+                            var result = [];
+                            var total = 0;
                             var region = this._VisMain.get_Region();
-                            var ownAlliance = ClientLib.Data.MainData.GetInstance().get_Alliance() ;
+                            var ownAlliance = ClientLib.Data.MainData.GetInstance().get_Alliance();
                             var scanDistance = 11;
-                            var found = false ;
-                            var ss = "" ;
+                            var attackDistance = 10.5;
+                            var found = false;
+                            var ss = "";
 
-                            if(this.buttonActivated) {
-                                this.addMarker(startX*region.get_GridWidth(), startY*region.get_GridHeight(), "#ffffff", 0, "#000000"); //blanc
+                            if (this.buttonActivated) {
+                                this.addMarker(startX * region.get_GridWidth(), startY * region.get_GridHeight(), "#ffffff", 0, "#000000"); //blanc
                             }
 
                             for (var x = startX - (scanDistance); x < (startX + scanDistance); x++) {
@@ -185,32 +188,36 @@
                                     if (visObject != null) {
                                         var baseX = visObject.get_RawX();
                                         var baseY = visObject.get_RawY();
-                                        var distance = ClientLib.Base.Util.CalculateDistance(startX, startY, baseX, baseY);
+                                        var a = startX - baseX;
+                                        var b = startY - baseY;
+                                        var distance = Math.sqrt(a * a + b * b);
 
                                         //var CPNeeded = visObject.CalculateAttackCommandPointCostToCoord(startX,startY);
 
-                                        if( distance < scanDistance ) {
+                                        if (distance <= attackDistance) {
 
                                             //var needcp = visObject.CalculateAttackCommandPointCostToCoord(startX, startY);
 
 
-                                            if( visObject.get_VisObjectType() == ClientLib.Vis.VisObject.EObjectType.RegionNPCBase ) {
-                                                total++ ;
-                                                var baseLevel = 0 ;
-                                                try {baseLevel=parseInt(visObject.get_BaseLevel());}catch(ee){}
-                                                if(baseLevel>0 ) {
-                                                    if( !result[baseLevel] ) result[baseLevel] = 0 ;
-                                                    result[baseLevel]++ ;
+                                            if (visObject.get_VisObjectType() == ClientLib.Vis.VisObject.EObjectType.RegionNPCBase) {
+                                                total++;
+                                                var baseLevel = 0;
+                                                try {
+                                                    baseLevel = parseInt(visObject.get_BaseLevel());
+                                                } catch (ee) {}
+                                                if (baseLevel > 0) {
+                                                    if (!result[baseLevel]) result[baseLevel] = 0;
+                                                    result[baseLevel]++;
                                                     found = true;
-                                                    var needcp = 10 + distance * 3 ;
-                                                    this.addMarker(baseX, baseY, "#ffde17",needcp, "#000000");  // jaune
+                                                    var needcp = Math.floor(10 + distance * 3);
+                                                    this.addMarker(baseX, baseY, "#ffde17", needcp, "#000000"); // jaune
                                                 }
-                                            } else if( visObject.get_VisObjectType() == ClientLib.Vis.VisObject.EObjectType.RegionCityType ) {
-                                                var needcp = 3 + distance;
-                                                if( visObject.get_AllianceId && visObject.get_AllianceId() == ownAlliance.get_Id() ){
-                                                    this.addMarker(baseX, baseY, "#0036ff",needcp,  "#ffffff"); //rouge
+                                            } else if (visObject.get_VisObjectType() == ClientLib.Vis.VisObject.EObjectType.RegionCityType) {
+                                                var needcp = Math.floor(3 + distance);
+                                                if (visObject.get_AllianceId && visObject.get_AllianceId() == ownAlliance.get_Id()) {
+                                                    this.addMarker(baseX, baseY, "#0036ff", needcp, "#ffffff"); //rouge
                                                 } else {
-                                                    this.addMarker(baseX, baseY, "#ff3600",needcp, "#000000"); //bleu
+                                                    this.addMarker(baseX, baseY, "#ff3600", needcp, "#000000"); //bleu
                                                 }
 
 
@@ -220,15 +227,15 @@
                                 }
                             }
 
-                            if( found == true ) {
-                                for(var a in result) {
-                                    ss += "["+result[a]+" x "+a+"]   " ;
+                            if (found == true) {
+                                for (var a in result) {
+                                    ss += "[" + result[a] + " x " + a + "]   ";
                                 }
                             } else {
-                                ss = "Nothing !" ;
+                                ss = "Nothing !";
                             }
 
-                            this.wavyPanel.labelNbVal.setValue(""+total);
+                            this.wavyPanel.labelNbVal.setValue("" + total);
                             this.wavyPanel.labelDetailVal.setValue(ss);
                             this.regionCityMoveInfoAddonExists = true;
                             webfrontend.gui.region.RegionCityMoveInfo.getInstance().add(this.wavyPanel.grid);
@@ -239,7 +246,7 @@
                     },
 
 
-                    screenPosFromWorldPosX : function (x) {
+                    screenPosFromWorldPosX: function(x) {
                         try {
                             return this._VisMain.ScreenPosFromWorldPosX(x * this.gridWidth);
                         } catch (e) {
@@ -247,7 +254,7 @@
                         }
                     },
 
-                    screenPosFromWorldPosY : function (y) {
+                    screenPosFromWorldPosY: function(y) {
                         try {
                             return this._VisMain.ScreenPosFromWorldPosY(y * this.gridHeight);
                         } catch (e) {
@@ -255,32 +262,39 @@
                         }
                     },
 
-                    addMarker : function (bx, by, color, cpNeeded, textColor) {
+                    addMarker: function(bx, by, color, cpNeeded, textColor) {
                         try {
                             var marker = new qx.ui.container.Composite(new qx.ui.layout.HBox(1)).set({
-                                decorator : new qx.ui.decoration.Decorator(1, "solid", "#000000").set({
-                                    backgroundColor : color
+                                decorator: new qx.ui.decoration.Decorator(1, "solid", "#000000").set({
+                                    backgroundColor: color
                                 }),
-                                width : this.baseMarkerWidth,
-                                height : this.baseMarkerHeight,
+                                width: this.baseMarkerWidth,
+                                height: this.baseMarkerHeight,
                             });
-                            marker.add(new qx.ui.basic.Label(""+cpNeeded).set({textColor:textColor,font:"bold",width:this.baseMarkerWidth,rich:true,textAlign:"middle",paddingLeft:1}));
+                            marker.add(new qx.ui.basic.Label("" + cpNeeded).set({
+                                textColor: textColor,
+                                font: "bold",
+                                width: this.baseMarkerWidth,
+                                rich: true,
+                                textAlign: "middle",
+                                paddingLeft: 1
+                            }));
 
                             this._App.getDesktop().addAfter(marker, this._App.getBackgroundArea(), {
-                                left : this.screenPosFromWorldPosX(bx),
-                                top : this.screenPosFromWorldPosY(by)
+                                left: this.screenPosFromWorldPosX(bx),
+                                top: this.screenPosFromWorldPosY(by)
                             });
                             this.baseMarkerList.push({
-                                element : marker,
-                                x : bx,
-                                y : by
+                                element: marker,
+                                x: bx,
+                                y: by
                             });
                         } catch (e) {
                             console.log(e);
                         }
                     },
 
-                    removeMarkers : function () {
+                    removeMarkers: function() {
                         try {
                             if (this.baseMarkerList.length > 0) {
                                 for (var i = 0; i < this.baseMarkerList.length; i++) {
@@ -293,19 +307,19 @@
                         }
                     },
 
-                    getRegionZoomFactorAndSetMarkerSize : function () {
+                    getRegionZoomFactorAndSetMarkerSize: function() {
                         try {
                             this.gridWidth = this._VisMain.get_Region().get_GridWidth();
                             this.gridHeight = this._VisMain.get_Region().get_GridHeight();
                             this.regionZoomFactor = this._VisMain.get_Region().get_ZoomFactor();
-                            this.baseMarkerWidth = (this.gridWidth)*0.12; //this.regionZoomFactor *
+                            this.baseMarkerWidth = (this.gridWidth) * 0.12; //this.regionZoomFactor *
                             this.baseMarkerHeight = this.baseMarkerWidth;
                         } catch (e) {
                             console.log(e);
                         }
                     },
 
-                    repositionMarkers : function () {
+                    repositionMarkers: function() {
                         try {
                             for (var i = 0; i < this.baseMarkerList.length; i++) {
                                 this.baseMarkerList[i].element.setDomLeft(this.screenPosFromWorldPosX(this.baseMarkerList[i].x));
@@ -316,7 +330,7 @@
                         }
                     },
 
-                    resizeMarkers : function () {
+                    resizeMarkers: function() {
                         try {
                             this.getRegionZoomFactorAndSetMarkerSize();
                             for (var i = 0; i < this.baseMarkerList.length; i++) {
