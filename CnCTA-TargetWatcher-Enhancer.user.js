@@ -1,6 +1,6 @@
 "use strict";
 // ==UserScript==
-// @version	    2020.12.02
+// @version	    2021.02.03
 // @name        CnCTA TargetWatcher Enhancer
 // @downloadURL https://github.com/bloofi/CnC_TA/raw/master/CnCTA-TargetWatcher-Enhancer.user.js
 // @updateURL   https://github.com/bloofi/CnC_TA/raw/master/CnCTA-TargetWatcher-Enhancer.user.js
@@ -16,6 +16,12 @@
             1: 'gold',
             2: '#cccccc',
             3: '#cccccc',
+        };
+        const markerColors = {
+            0: 'rgba(150, 150, 150, 0.5)',
+            1: 'rgb(21, 60, 200, 0.8)',
+            2: 'rgb(188,143,28)',
+            3: 'rgba(200, 21, 21, 0.5)',
         };
         const init = () => {
             /*
@@ -64,14 +70,40 @@
                                 .get_Alliance()
                                 .get_MemberDataAsArray();
                             const watchers = Object.values(ClientLib.Data.MainData.GetInstance().get_AllianceWatchListWatcher()).reduce((p, c) => (typeof c === 'object' ? Object.values(c) : p), []);
-                            if (watchers && watchers.length) {
-                                const res = watchers.filter(w => w.b === bid && w.p !== myId).map(w => {
-                                    const m = members.find(m => m.Id === w.p);
-                                    return Object.assign(Object.assign({}, w), { n: m.Name, s: m.OnlineState });
-                                });
-                                const label = `${res.sort((a, b) => a.s === 1 ? 1 : 0).map(w => `<span style="color:${colors[w.s]};">${w.n}</span>`).join(', ')} ${res.length > 1 ? 'are' : 'is'} watching !`;
-                                divLabel.realSetValue(label);
+                            const labels = [];
+                            const timerLabel = /(?:<img.*)?\d{2}:\d{2}$/.exec(value);
+                            if (timerLabel) {
+                                labels.push(timerLabel[0], '<br>');
                             }
+                            switch (qx.core.Init.getApplication()
+                                .getPlayArea()
+                                .getViewMode()) {
+                                case 5: // Army setup
+                                case 8: // Spectating an attack
+                                case 10: // Simulating an attack
+                                    if (watchers && watchers.length) {
+                                        const res = watchers
+                                            .filter(w => w.b === bid && w.p !== myId)
+                                            .map(w => {
+                                            const m = members.find(m => m.Id === w.p);
+                                            return Object.assign(Object.assign({}, w), { n: m.Name, s: m.OnlineState });
+                                        });
+                                        if (res.length) {
+                                            const label = `${res
+                                                .sort((a, b) => (a.s === 1 ? 1 : 0))
+                                                .map(w => `<span style="color:${colors[w.s]};">${w.n}</span>`)
+                                                .join(', ')} ${res.length > 1 ? 'are' : 'is'} watching !`;
+                                            labels.push(label);
+                                        }
+                                    }
+                                    break;
+                                default:
+                                    labels.splice(0, labels.length);
+                                    labels.push(value);
+                                    break;
+                            }
+                            labels.reverse();
+                            divLabel.realSetValue(labels.join(''));
                         };
                     }
                 }
@@ -134,10 +166,10 @@
                 //         b.marker.setHeight(baseMarkerHeight);
                 //     });
             };
-            const addMarker = (x, y, names) => {
+            const addMarker = (x, y, names, states) => {
                 const marker = new qx.ui.container.Composite(new qx.ui.layout.Dock()).set({
                     decorator: new qx.ui.decoration.Decorator().set({
-                        color: 'rgba(200, 21, 21, 0.5)',
+                        color: 'rgba(200, 21, 21, 0.8)',
                         style: 'solid',
                         width: 2,
                         radius: 5,
@@ -145,7 +177,7 @@
                 });
                 const label = new qx.ui.basic.Label('').set({
                     decorator: new qx.ui.decoration.Decorator().set({
-                        color: 'rgba(200, 21, 21, 0.5)',
+                        color: states.length ? markerColors[states[0]] : 'rgba(200, 21, 21, 0.8)',
                         style: 'solid',
                         width: 1,
                         radius: 5,
@@ -154,7 +186,7 @@
                     toolTipText: names.length > 1 ? `Other watchers : ${names.slice(1).join(', ')}` : '',
                     textColor: '#ffffff',
                     textAlign: 'center',
-                    backgroundColor: 'rgba(200, 21, 21, 0.8)',
+                    backgroundColor: states.length ? markerColors[states[0]] : 'rgba(200, 21, 21, 0.8)',
                     font: new qx.bom.Font(10, ['Arial']),
                     rich: true,
                     wrap: false,
@@ -200,7 +232,9 @@
                         .concat(Object.values(ClientLib.Vis.VisMain.GetInstance()
                         .get_Region()
                         .GetNPCBases().d).map((c) => ({ id: c[propBaseGetId], x: c.posX, y: c.posY })));
-                    const markers = watchers.filter(c => c.p !== me.get_Id()).reduce((p, c) => {
+                    const markers = watchers
+                        .filter(c => c.p !== me.get_Id())
+                        .reduce((p, c) => {
                         if (!p[`${c.b}`]) {
                             let city = citiesCache[`${c.b}`];
                             if (!city) {
@@ -215,15 +249,20 @@
                                 x: city ? city.x : null,
                                 y: city ? city.y : null,
                                 names: [],
+                                states: [],
                             };
                         }
-                        p[`${c.b}`].names.push(members.find(m => m.Id === c.p).Name);
+                        const m = members.find(m => m.Id === c.p);
+                        if (m.OnlineState) {
+                            p[`${c.b}`].names.push(m.Name);
+                            p[`${c.b}`].states.push(m.OnlineState);
+                        }
                         return p;
                     }, {});
                     Object.entries(markers)
-                        .filter(([b, m]) => m.isLoaded)
+                        .filter(([b, m]) => m.isLoaded && m.names.length)
                         .forEach(([_b, m]) => {
-                        addMarker(m.x, m.y, m.names);
+                        addMarker(m.x, m.y, m.names, m.states);
                     });
                 }
                 checkTimeout = setTimeout(checkWatchers, 3000);
