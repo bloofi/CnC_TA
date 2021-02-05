@@ -1,6 +1,6 @@
 "use strict";
 // ==UserScript==
-// @version	    2021.02.03
+// @version	    2021.02.05
 // @name        CnCTA TargetWatcher Enhancer
 // @downloadURL https://github.com/bloofi/CnC_TA/raw/master/CnCTA-TargetWatcher-Enhancer.user.js
 // @updateURL   https://github.com/bloofi/CnC_TA/raw/master/CnCTA-TargetWatcher-Enhancer.user.js
@@ -220,7 +220,8 @@
                 removeMarkers();
                 if (qx.core.Init.getApplication()
                     .getPlayArea()
-                    .getViewMode() === 0) {
+                    .getViewMode() === 0 &&
+                    !qx.core.Init.getApplication().getCurrentMenuOverlay()) {
                     const members = ClientLib.Data.MainData.GetInstance()
                         .get_Alliance()
                         .get_MemberDataAsArray();
