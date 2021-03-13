@@ -1,6 +1,6 @@
 "use strict";
 // ==UserScript==
-// @version	    2020.11.28
+// @version	    2021.03.13
 // @name        CnCTA Baseinfo V5
 // @downloadURL https://github.com/bloofi/CnC_TA/raw/master/CnCTA-BaseInfoV5.user.js
 // @updateURL   https://github.com/bloofi/CnC_TA/raw/master/CnCTA-BaseInfoV5.user.js
@@ -274,7 +274,7 @@
                             allowClose: true,
                             resizable: false,
                         });
-                        this.components.mainWindow.setLayout(new qx.ui.layout.Dock());
+                        this.components.mainWindow.setLayout(new qx.ui.layout.Atom());
                         this.components.mainWindow.center();
                         this.components.panelStack = new qx.ui.container.Stack();
                         this.components.mainWindow.add(this.components.panelStack, { edge: 'center' });
@@ -323,7 +323,7 @@
                             textColor: logColors.SUCCESS,
                         });
                         this.components.panels.authenticated.add(this.components.authLabel);
-                        const buttonsApp = new qx.ui.container.Composite(new qx.ui.layout.Dock()).set({
+                        const buttonsApp = new qx.ui.container.Composite(new qx.ui.layout.Atom()).set({
                             allowGrowX: true,
                             decorator: new qx.ui.decoration.Decorator().set({
                                 colorTop: logColors.NORMAL_WHITE,
@@ -346,7 +346,7 @@
                             textColor: logColors.NORMAL_WHITE,
                         });
                         this.components.panels.authenticated.add(this.components.updateLabel);
-                        const buttonsScan = new qx.ui.container.Composite(new qx.ui.layout.Dock()).set({
+                        const buttonsScan = new qx.ui.container.Composite(new qx.ui.layout.Atom()).set({
                             allowGrowX: true,
                             decorator: new qx.ui.decoration.Decorator().set({
                                 colorTop: logColors.NORMAL_WHITE,
