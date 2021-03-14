@@ -1,5 +1,5 @@
 // ==UserScript==
-// @version	    2021.02.05
+// @version	    2021.03.14
 // @name        CnCTA TargetWatcher Enhancer
 // @downloadURL https://github.com/bloofi/CnC_TA/raw/master/CnCTA-TargetWatcher-Enhancer.user.js
 // @updateURL   https://github.com/bloofi/CnC_TA/raw/master/CnCTA-TargetWatcher-Enhancer.user.js
@@ -32,6 +32,21 @@
         const init = () => {
             /*
             qx.core.Init.getApplication().getUIItem(ClientLib.Data.Missions.PATH.OVL_PLAYAREA).getChildren()[10]
+            pavmNone = 0,
+            pavmPlayerBase = 1,
+            pavmPlayerDefense = 2,
+            pavmPlayerOffense = 3,
+            pavmCombatSetupBase = 4,
+            pavmCombatSetupDefense = 5,
+            pavmCombatAttacker = 6,
+            pavmCombatDefender = 7,
+            pavmCombatViewerAttacker = 8,
+            pavmCombatViewerDefender = 9,
+            pavmCombatReplay = 10,
+            pavmCombatSimulation = 11,
+            pavmWorldMap = 12,
+            pavmAllianceBase = 13,
+            pavmAllianceBaseDefense = 14,
              */
             const me = ClientLib.Data.MainData.GetInstance().get_Player();
 
@@ -190,7 +205,7 @@
             };
 
             const addMarker = (x: number, y: number, names: string[], states: number[]) => {
-                const marker = new qx.ui.container.Composite(new qx.ui.layout.Dock()).set({
+                const marker = new qx.ui.container.Composite(new qx.ui.layout.Atom()).set({
                     decorator: new qx.ui.decoration.Decorator().set({
                         color: 'rgba(200, 21, 21, 0.8)',
                         style: 'solid',

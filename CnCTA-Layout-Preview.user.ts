@@ -1,5 +1,5 @@
 // ==UserScript==
-// @version	    2020.01.03
+// @version	    2021.03.14
 // @name        CnCTA Layout Preview
 // @downloadURL https://github.com/bloofi/CnC_TA/raw/master/CnCTA-Layout-Preview.user.js
 // @updateURL   https://github.com/bloofi/CnC_TA/raw/master/CnCTA-Layout-Preview.user.js
@@ -18,7 +18,7 @@
                     let checkCount = 0;
                     let checkTimeout = 0;
                     let currentIsLoading = false;
-                    const layoutPreviewComponent = new qx.ui.container.Composite(new qx.ui.layout.Dock());
+                    const layoutPreviewComponent = new qx.ui.container.Composite(new qx.ui.layout.Atom());
                     webfrontend.gui.region[region].getInstance().add(layoutPreviewComponent);
                     webfrontend.gui.region[region].prototype.onCitiesChange = function() {
                         try {

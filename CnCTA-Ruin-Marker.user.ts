@@ -1,5 +1,5 @@
 // ==UserScript==
-// @version	    2020.05.07
+// @version	    2021.03.14
 // @name        CnCTA Ruin Marker
 // @author      bloofi (https://github.com/bloofi)
 // @downloadURL https://github.com/bloofi/CnC_TA/raw/master/CnCTA-Ruin-Marker.user.js
@@ -81,7 +81,7 @@
             };
 
             const addMarker = (x: number, y: number, timeLeft: number) => {
-                const marker = new qx.ui.container.Composite(new qx.ui.layout.Dock());
+                const marker = new qx.ui.container.Composite(new qx.ui.layout.Atom());
                 const label = new qx.ui.basic.Label('').set({
                     decorator: new qx.ui.decoration.Decorator().set({
                         color: 'rgba(0,0,0,0)',

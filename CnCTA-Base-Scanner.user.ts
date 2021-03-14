@@ -1,5 +1,5 @@
 // ==UserScript==
-// @version	    2020.05.06
+// @version	    2021.03.14
 // @name        CnCTA Base Scanner
 // @author      bloofi (https://github.com/bloofi)
 // @downloadURL https://github.com/bloofi/CnC_TA/raw/master/CnCTA-Base-Scanner.user.js
@@ -163,19 +163,20 @@ declare var _;
                             allowClose: true,
                             resizable: true,
                         });
-                        this.mainWindow.setLayout(new qx.ui.layout.Dock());
+                        this.mainWindow.setLayout(new qx.ui.layout.Canvas());
                         if (this.storage && this.storage.mainWindow && this.storage.mainWindow.x && this.storage.mainWindow.y) {
                             this.mainWindow.moveTo(this.storage.mainWindow.x, this.storage.mainWindow.y);
                         } else {
                             this.mainWindow.center();
                         }
 
-                        const container = new qx.ui.container.Composite(new qx.ui.layout.Dock());
+                        const container = new qx.ui.container.Composite(new qx.ui.layout.VBox());
 
                         const toolbar = new qx.ui.toolbar.ToolBar().set({
-                            height: 70,
+                            height: 90,
+                            maxHeight: 90,
                         });
-                        container.add(toolbar, { edge: 'north' });
+                        container.add(toolbar);
 
                         const vboxButton = new qx.ui.container.Composite(new qx.ui.layout.VBox(5)).set({
                             padding: 5,
@@ -192,7 +193,6 @@ declare var _;
 
                         const scanFilterWhat = new qx.ui.groupbox.GroupBox('Scan what');
                         scanFilterWhat.setLayout(new qx.ui.layout.Grid(10, 5));
-                        container.add(scanFilterWhat);
                         this.filterCampCheckbox = new qx.ui.form.CheckBox('Camps');
                         this.filterCampCheckbox.setValue(true);
                         scanFilterWhat.add(this.filterCampCheckbox, { row: 0, column: 0 });
@@ -220,10 +220,10 @@ declare var _;
                         const scanFilterScore = new qx.ui.groupbox.GroupBox('Scan Filter');
                         scanFilterScore.setLayout(new qx.ui.layout.VBox(2));
 
-                        const rowTib = new qx.ui.container.Composite(new qx.ui.layout.Dock()).set({
-                            width: 150,
+                        const rowTib = new qx.ui.container.Composite(new qx.ui.layout.HBox()).set({
+                            width: 200,
                         });
-                        rowTib.add(this.createImage(icons.tib, 20, 20), { edge: 'west' });
+                        rowTib.add(this.createImage(icons.tib, 20, 20));
                         this.filterScoreTibSlider = new qx.ui.form.Slider().set({
                             minimum: 0,
                             maximum: 99,
@@ -231,7 +231,7 @@ declare var _;
                             singleStep: 3,
                         });
                         this.filterScoreTibSlider.addListener('changeValue', this.onSliderTibScore, this);
-                        rowTib.add(this.filterScoreTibSlider, { edge: 'center' });
+                        rowTib.add(this.filterScoreTibSlider, { flex: 1 });
                         this.filterScoreTibLabel = new qx.ui.basic.Label('20').set({
                             font: new qx.bom.Font(14),
                             width: 20,
@@ -240,20 +240,20 @@ declare var _;
                                 ...Object.entries(scoreTibMap).map(s => `<b>${s[1]} points</b> for each ${s[0]}`),
                             ].join('<br>'),
                         });
-                        rowTib.add(this.filterScoreTibLabel, { edge: 'east' });
+                        rowTib.add(this.filterScoreTibLabel);
                         scanFilterScore.add(rowTib);
 
-                        const rowPower = new qx.ui.container.Composite(new qx.ui.layout.Dock()).set({
-                            width: 150,
+                        const rowPower = new qx.ui.container.Composite(new qx.ui.layout.HBox()).set({
+                            width: 200,
                         });
-                        rowPower.add(this.createImage(icons.power, 20, 20), { edge: 'west' });
+                        rowPower.add(this.createImage(icons.power, 20, 20));
                         this.filterScorePowerSlider = new qx.ui.form.Slider().set({
                             minimum: 0,
                             maximum: 99,
                             value: 0,
                         });
                         this.filterScorePowerSlider.addListener('changeValue', this.onSliderPowerScore, this);
-                        rowPower.add(this.filterScorePowerSlider, { edge: 'center' });
+                        rowPower.add(this.filterScorePowerSlider, { flex: 1 });
                         this.filterScorePowerLabel = new qx.ui.basic.Label('0').set({
                             font: new qx.bom.Font(14),
                             width: 20,
@@ -262,7 +262,7 @@ declare var _;
                                 ...Object.entries(scorePowerMap).map(s => `<b>${s[1]} points</b> for each ${s[0]}`),
                             ].join('<br>'),
                         });
-                        rowPower.add(this.filterScorePowerLabel, { edge: 'east' });
+                        rowPower.add(this.filterScorePowerLabel);
                         scanFilterScore.add(rowPower);
 
                         toolbar.add(scanFilterScore);
@@ -287,9 +287,9 @@ declare var _;
                         });
                         const scanResultScroll = new qx.ui.container.Scroll();
                         scanResultScroll.add(this.scanResultComponent);
-                        container.add(scanResultScroll, { edge: 'center' });
+                        container.add(scanResultScroll, { flex : 1 });
 
-                        this.mainWindow.add(container, { edge: 'center' });
+                        this.mainWindow.add(container, { edge: 0 });
                         this.mainWindow.addListener('move', this.onWindowMove, this);
                     },
 
@@ -516,8 +516,8 @@ declare var _;
 
                     addPanel: function(sr: ScannerResult) {
                         if (!this.bases[sr.scanID]) {
-                            const panel = new qx.ui.container.Composite(new qx.ui.layout.Dock());
-                            panel.add(this.getGridLayout(sr), { edge: 'center' });
+                            const panel = new qx.ui.container.Composite(new qx.ui.layout.Grow());
+                            panel.add(this.getGridLayout(sr));
 
                             this.scanResultComponent.add(panel);
                             this.bases[sr.scanID] = {
@@ -528,7 +528,7 @@ declare var _;
                     },
 
                     getGridLayout: function(sr: ScannerResult) {
-                        const res = new qx.ui.container.Composite(new qx.ui.layout.Dock());
+                        const res = new qx.ui.container.Composite(new qx.ui.layout.VBox());
                         res.set({
                             backgroundColor: sr.isCached ? 'transparent' : 'silver',
                             decorator: new qx.ui.decoration.Decorator().set({
@@ -537,18 +537,19 @@ declare var _;
                                 width: 1,
                             }),
                         });
-                        const header = new qx.ui.container.Composite(new qx.ui.layout.Dock()).set({
+                        const header = new qx.ui.container.Composite(new qx.ui.layout.HBox(5)).set({
                             backgroundColor: 'silver',
+                        }).set({
+                            height: 20,
                         });
                         header.add(
                             new qx.ui.basic.Label().set({
                                 value: `${sr.x}:${sr.y}`,
                                 rich: true,
                                 textColor: 'blue',
-                            }),
-                            { edge: 'west' },
+                            })
                         );
-                        res.add(header, { edge: 'north' });
+                        res.add(header);
 
                         const grid = new qx.ui.container.Composite(new qx.ui.layout.Grid(1, 1));
                         grid.set({
@@ -575,7 +576,7 @@ declare var _;
                                         textColor: 'black',
                                     }),
                                 );
-                                header.add(scores, { edge: 'east' });
+                                header.add(scores);
                                 for (let y = 0; y < 8; y++) {
                                     for (let x = 0; x < 9; x++) {
                                         const cell = new qx.ui.core.Widget();
@@ -623,10 +624,12 @@ declare var _;
                                 break;
                         }
 
-                        res.add(grid, { edge: 'center' });
+                        res.add(grid, { flex: 1 });
 
                         const footer = new qx.ui.container.Composite(new qx.ui.layout.HBox(5)).set({
                             paddingLeft: 5,
+                        }).set({
+                            height: 20,
                         });
                         const bTarget = new qx.ui.form.Button('', icons.target).set({
                             decorator: null,
@@ -650,7 +653,7 @@ declare var _;
                             bCnclv.addListener('execute', this.openCncLV(sr), this);
                             footer.add(bCnclv);
                         }
-                        res.add(footer, { edge: 'south' });
+                        res.add(footer);
 
                         return res;
                     },
