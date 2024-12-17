@@ -1,13 +1,16 @@
-"use strict";
 // ==UserScript==
-// @version	    2021.03.14
 // @name        CnCTA Base Scanner
-// @author      bloofi (https://github.com/bloofi)
-// @downloadURL https://github.com/bloofi/CnC_TA/raw/master/CnCTA-Base-Scanner.user.js
-// @updateURL   https://github.com/bloofi/CnC_TA/raw/master/CnCTA-Base-Scanner.user.js
-// @include     http*://prodgame*.alliances.commandandconquer.com/*/index.aspx*
-// @include     http*://cncapp*.alliances.commandandconquer.com/*/index.aspx*
+// @namespace   https://github.com/bloofi
+// @version	    2024.12.17
+// @description bloofi's layout scanner
+// @author      bloofi
+// @contributor ffi82
+// @downloadURL https://github.com/ffi82/CnC_TA/raw/master/CnCTA-Base-Scanner.user.js
+// @updateURL   https://github.com/ffi82/CnC_TA/raw/master/CnCTA-Base-Scanner.meta.js
+// @match       https://*.alliances.commandandconquer.com/*/index.aspx*
+// @grant       none
 // ==/UserScript==
+"use strict";
 (function () {
     const script = () => {
         const scriptName = 'CnCTA Base Scanner';
@@ -33,8 +36,8 @@
             const icons = {
                 cnclv: 'https://spy-cnc.fr/CNC/bi/favicon-cnclv.ico',
                 scan: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAALEwAACxMBAJqcGAAAAd5JREFUSIntlLFr20AYxd87yVWXdMmQoUNK6L9QCIU2mbx091oKDV1sH4IQD6WFhi4djCWLQiEYMrQUNAXSrRDyLwQPmVriTXsH2Vj+vg6RwcSJLDdDl7zxvrv3u+/u3QF3+t/ioglRFK2qalVVN0iOAfRV9cRaO7oVIAxDD8A+SQvAm62JSEJy11r7bRHAFJgfk9wTke8kn6jq/TRNH4jIC2PMb5Jfu93uu3/qIAzDTyT3ALxqNpuHV+txHDtJkvQAvCRZbTQaP0t3EEXRKkkrIofXmQNArVabqOobAL9Udb+ogzmAqlYBeI7jfC5aaK0dqeoBgM0gCNaWAWwAgIj0iwC5zgDAGPO4NCCPIobD4b0SgGm6xqUBAPoA4Hnes0XuJJ8DyNI0PS8NUNUTEUmMMW/jOHZuWthutx8C2AFw1Gq1/pQGWGtHJHcBPE2SpJe/iTnzSqXyA8CKiHy5yRwofsnvSX7AZRQPcHmhXn4sOwBWAEBEBqq67fv+xVKAHFLNIZszwxmAo3znPWPMehFk4WcHAEEQrOVRHKdpej49806n84jkaRGkFKBIVyGu627V6/XBtH7tZ7eMfN+/UNVtERkYY9azLHs9W781YApxXXdLRD5OJpPCVN1pTn8BTmff2pUBWMIAAAAASUVORK5CYII=',
-                tib: ClientLib.File.FileManager.GetInstance().GetPhysicalPath('ui/common/icn_res_tiberium.png'),
-                power: ClientLib.File.FileManager.GetInstance().GetPhysicalPath('ui/common/icn_res_power.png'),
+                tib: 'webfrontend/ui/common/icn_res_tiberium.png',
+                power: 'webfrontend/ui/common/icn_res_power.png',
                 target: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAAdgAAAHYBTnsmCAAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAKRSURBVDiNpVNdSBRRFD73zuxOtuuo41/hRlFq/rcm2kNbRmSmomZUZkZEkGQtlUGERKQ9SPUQ9RAhWdmSmltaoKVgYZhRKKZCElkpoYnrKu7uuD9jztwebAbXfCj63r5zvnPPOR/3oE9rg8opAvvgNwgh0xSFTsEiiIDCkUQuLYwRhExocE1wDwHStLjgb4AAZeOlEmz+odW6h08ymdgElisyRq68dXfb8qQU/6W09EJC+XMq3YP6XCZBHyu53W5E0W+xL8v4pmcZtDszDXyj+eX4+dPvvWqMfpoUQODAGMOqxpZ89froCEetqXW0MK9hbmzU43r3ZoJvrO9alpjEatN2baYDg13O9rax+R2QE2OEqwAAOOPZaCYqJtJ2v/K55eK5biIIktxldnTEM7I365mnv3eAPVCYxoRHaAAAEMFVigeazJxEcdJqtVaU9Snjaf1orFYjmVvLStuQSk37Hz4W84cH9vqaLnFywiVzn3g9G/a4+YRotUwMb0m6BwDg7uuxT165/EgY/uaQdcoEkt0mSHb7T5kTWoURhTGiKC+j56amPMQ1o+iUZMBx41bKL4Ad2hR3GwDA09ttG05Nvk54hyL2idezK67dOGKvNbW6OjumAAAwQsQAADDT8qKfDgkNCSwpjVO6jf3wiDwvyjyorGI7EedEm+nOwHwxMWCJkAIAgOmbVz8KX78MccXGnJAL5XqgacU8igtS6Woasnw2Jm9wNJhfCYOfnQAAEiEHvb4yHRrKhFWb9zBRMZES7+BHCvKqtDvSddzJM7sBUxTf9LR9vKS4U34YAcr2NshiEb5npNZxR4vWaTJy4zDGQGZnRWfH625bdeUHee+F+O9jokVMmikC++Xgv50zmH4B/JMOCtMZe/oAAAAASUVORK5CYII=',
             };
             const Main = qx.Class.define('Main', {
@@ -76,8 +79,8 @@
                         this.currentWid = server.get_WorldId();
                         this.debouncedFilterResults = _.debounce(this.filterResults, 800);
                         const ScriptsButton = qx.core.Init.getApplication()
-                            .getMenuBar()
-                            .getScriptsButton();
+                        .getMenuBar()
+                        .getScriptsButton();
                         ScriptsButton.Add('Base Scanner');
                         const children = ScriptsButton.getMenu().getChildren();
                         const lastChild = children[children.length - 1];
@@ -225,8 +228,8 @@
                         this.filterFromSelect.removeAll();
                         this.filterFromSelect.add(new qx.ui.form.ListItem('All bases', null, 'all'));
                         Object.values(ClientLib.Data.MainData.GetInstance()
-                            .get_Cities()
-                            .get_AllCities().d).forEach((c) => {
+                                      .get_Cities()
+                                      .get_AllCities().d).forEach((c) => {
                             this.filterFromSelect.add(new qx.ui.form.ListItem(c.get_Name(), null, c));
                         });
                     },
@@ -250,11 +253,12 @@
                                     detail.push(`Currently scanning : <b>${b.type} ${b.x}:${b.y}</b> from <b>${b.from.get_Name()}</b> (${b.retry})`);
                                 }
                                 break;
-                            case 'END':
+                            case 'END': {
                                 const nbTotal = Object.values(this.bases).filter(r => r.status !== 'CANCELED').length;
                                 const nbFiltered = Object.values(this.bases).filter(r => r.isFiltered).length;
                                 detail.push(`<b>${nbTotal}</b> item(s) scanned. <b>${nbTotal - nbFiltered}</b> item(s) displayed.`);
                                 break;
+                            }
                             default:
                                 detail.push('Unknown scan status');
                                 break;
@@ -278,6 +282,7 @@
                     },
                     onButtonScan: function () {
                         if (this.scanStatus === 'READY' || this.scanStatus === 'END') {
+                            qx.core.Init.getApplication().showMainOverlay(false);
                             this.startScan();
                         }
                         else {
@@ -461,7 +466,7 @@
                             backgroundColor: '#555555',
                         });
                         switch (sr.status) {
-                            case 'FETCHED':
+                            case 'FETCHED': {
                                 const scores = new qx.ui.container.Composite(new qx.ui.layout.HBox());
                                 scores.add(this.createImage(icons.tib));
                                 scores.add(new qx.ui.basic.Label().set({
@@ -498,10 +503,11 @@
                                     }
                                 }
                                 break;
+                            }
                             case 'WAITING':
                             case 'FETCHING':
                             case 'CANCELED':
-                            default:
+                            default: {
                                 const borderColor = sr.status === 'CANCELED' ? 'red' : 'gray';
                                 for (let y = 0; y < 8; y++) {
                                     grid.add(new qx.ui.core.Widget().set({ width: 10, height: 10, backgroundColor: borderColor }), { row: y, column: 0 });
@@ -518,6 +524,7 @@
                                     textAlign: 'center',
                                 }), { row: 1, column: 1, rowSpan: 6, colSpan: 7 });
                                 break;
+                            }
                         }
                         res.add(grid, { flex: 1 });
                         const footer = new qx.ui.container.Composite(new qx.ui.layout.HBox(5)).set({
@@ -587,10 +594,10 @@
                                         }
                                         this.checkAndFetch();
                                         break;
-                                    case 'FETCHING':
+                                    case 'FETCHING':{
                                         const data = ClientLib.Data.MainData.GetInstance()
-                                            .get_Cities()
-                                            .GetCity(currentScan.city.get_Id());
+                                        .get_Cities()
+                                        .GetCity(currentScan.city.get_Id());
                                         if (data && data.get_OwnerId()) {
                                             currentScan.layout = this.getCityLayout(data);
                                             currentScan.status = 'FETCHED';
@@ -613,13 +620,14 @@
                                             }
                                         }
                                         break;
-                                    case 'FETCHED':
+                                    }
+                                    case 'FETCHED': {
                                         const scores = this.computeScores(currentScan.layout);
                                         currentScan.tibScore = scores[0];
                                         currentScan.powerScore = scores[1];
                                         currentScan.isFiltered =
                                             currentScan.tibScore < this.filterScoreTibSlider.getValue() ||
-                                                currentScan.powerScore < this.filterScorePowerSlider.getValue();
+                                            currentScan.powerScore < this.filterScorePowerSlider.getValue();
                                         currentScan.panel.removeAll();
                                         if (!currentScan.isFiltered && !currentScan.isCanceled) {
                                             currentScan.panel.add(this.getGridLayout(currentScan), { edge: 'center' });
@@ -629,6 +637,7 @@
                                         this.flushStorage();
                                         this.findNext();
                                         break;
+                                    }
                                     case 'CANCELED':
                                         this.findNext();
                                         break;
@@ -654,8 +663,8 @@
                     },
                     getOwnCitiesAsArray: function () {
                         return Object.values(ClientLib.Data.MainData.GetInstance()
-                            .get_Cities()
-                            .get_AllCities().d);
+                                             .get_Cities()
+                                             .get_AllCities().d);
                     },
                     createImage: function (icon, w = 16, h = 16) {
                         const image = new qx.ui.basic.Image(icon);
@@ -793,19 +802,11 @@
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         function checkForInit() {
             try {
-                if (typeof qx !== 'undefined' &&
-                    qx &&
-                    qx.core &&
-                    qx.core.Init &&
-                    qx.core.Init.getApplication &&
-                    qx.core.Init.getApplication() &&
-                    qx.core.Init.getApplication().initDone &&
-                    _) {
-                    init();
+                if (typeof qx === 'undefined' || !qx.core.Init.getApplication().initDone) {
+                    setTimeout(checkForInit, 100);
+                    return;
                 }
-                else {
-                    window.setTimeout(checkForInit, 1000);
-                }
+                init();
             }
             catch (e) {
                 console.log(scriptName, e);
@@ -820,7 +821,7 @@
         try {
             const script_lodash = document.createElement('script');
             script_lodash.type = 'text/javascript';
-            script_lodash.src = 'https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.15/lodash.min.js';
+            script_lodash.src = 'https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.20/lodash.min.js';
             document.getElementsByTagName('head')[0].appendChild(script_lodash);
             const script_block = document.createElement('script');
             script_block.innerHTML = `(${script.toString()})();`;
